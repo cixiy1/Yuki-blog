@@ -24,8 +24,15 @@ export const musicPlayerConfig: MusicPlayerConfig = {
 			{
 				name: "失眠",
 				artist: "Suki刘舒妤",
-				url: "/assets/music/失眠-Suki刘舒妤.flac",
+				url: "/assets/music/shimian-suki.flac",
 				cover: "",
+				lrc: ""
+			},
+			{
+				name: "使一颗心免于哀伤",
+				artist: "知更鸟 / HOYO-MiX / Chevy",
+				url: "/assets/music/使一颗心免于哀伤-哼唱.mp3",
+				cover: "/assets/music/cover/109951169585655912.webp",
 				lrc: ""
 			}
 		]
