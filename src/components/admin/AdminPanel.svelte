@@ -30,8 +30,10 @@
 	}: Props = $props();
 
 	// 当前编辑的配置副本
+	// 注意：不能 structuredClone —— Astro 传进来的 props 是响应式代理对象，无法克隆
+	// 配置数据本身是纯 JSON，用 JSON 序列化深拷贝最安全
 	let configs = $state<Record<string, unknown>>(
-		structuredClone(initialConfigs),
+		JSON.parse(JSON.stringify(initialConfigs)),
 	);
 	// 每个配置的修改标记
 	let dirtyKeys = $state<Set<string>>(new Set());
@@ -56,7 +58,7 @@
 		const key = path.split(/[.[]/)[0];
 		if (!key || !(key in configs)) return;
 		// 深拷贝后修改路径上的值
-		const clone = structuredClone(configs[key]);
+		const clone = JSON.parse(JSON.stringify(configs[key]));
 		setByPath(clone, path.slice(key.length).replace(/^\./, ""), value);
 		configs = { ...configs, [key]: clone };
 		dirtyKeys = new Set(dirtyKeys).add(key);
@@ -77,7 +79,10 @@
 	}
 
 	function resetConfig(key: string) {
-		configs = { ...configs, [key]: structuredClone(initialConfigs[key]) };
+		configs = {
+			...configs,
+			[key]: JSON.parse(JSON.stringify(initialConfigs[key])),
+		};
 		const set = new Set(dirtyKeys);
 		set.delete(key);
 		dirtyKeys = set;
