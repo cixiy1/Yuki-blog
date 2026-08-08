@@ -1,6 +1,6 @@
 import { setMaxListeners } from "node:events";
-import { writeFileSync } from "node:fs";
-import { basename, join, resolve } from "node:path";
+import { existsSync, mkdirSync, writeFileSync } from "node:fs";
+import { basename, extname, join, resolve } from "node:path";
 import cloudflare from "@astrojs/cloudflare";
 import { unified } from "@astrojs/markdown-remark";
 import mdx from "@astrojs/mdx";
@@ -381,6 +381,71 @@ export default defineConfig({
 								});
 							}
 						});
+					});
+					// 文件上传：POST /api/admin/upload?session=xxx&file=name.ext，body 为二进制
+					// 存到 public/assets/<分类>/ 下，返回可访问 URL
+					server.middlewares.use("/api/admin/upload", (req, res, next) => {
+						if (req.method !== "POST") return next();
+						const send = (status, obj) => {
+							res.statusCode = status;
+							res.setHeader("Content-Type", "application/json");
+							res.end(JSON.stringify(obj));
+						};
+						const url = new URL(req.url, "http://localhost");
+						const expiresAt = Number(url.searchParams.get("session"));
+						if (Number.isNaN(expiresAt) || Date.now() >= expiresAt) {
+							return send(401, { ok: false, message: "会话已过期，请重新登录" });
+						}
+						const fileName = basename(url.searchParams.get("file") || "");
+						const ext = extname(fileName).toLowerCase();
+						// 按扩展名分类到不同目录
+						let category = "files";
+						if ([".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg", ".avif", ".ico"].includes(ext)) {
+							category = "images";
+						} else if ([".mp3", ".flac", ".wav", ".ogg", ".m4a", ".aac"].includes(ext)) {
+							category = "music";
+						} else if ([".mp4", ".webm", ".mov", ".avi"].includes(ext)) {
+							category = "video";
+						}
+						// 允许的扩展名白名单
+						const allowed = [".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg", ".avif", ".ico",
+							".mp3", ".flac", ".wav", ".ogg", ".m4a", ".aac",
+							".mp4", ".webm", ".mov", ".avi", ".pdf", ".txt", ".lrc", ".json", ".xml"];
+						if (!allowed.includes(ext) || fileName.startsWith(".")) {
+							return send(400, { ok: false, message: `不允许上传 .${ext.replace(".", "")} 文件` });
+						}
+						// 收集二进制 body
+						const chunks = [];
+						req.on("data", (chunk) => chunks.push(Buffer.from(chunk)));
+						req.on("end", () => {
+							try {
+								const buf = Buffer.concat(chunks);
+								if (buf.length === 0) {
+									return send(400, { ok: false, message: "文件内容为空" });
+								}
+								const assetsDir = resolve(process.cwd(), "public/assets");
+								const targetDir = join(assetsDir, category);
+								if (!targetDir.startsWith(assetsDir)) {
+									return send(400, { ok: false, message: "路径不合法" });
+								}
+								if (!existsSync(targetDir)) mkdirSync(targetDir, { recursive: true });
+								const safeName = fileName.replace(/[^\w.\u4e00-\u9fa5-]/g, "_");
+								const target = join(targetDir, safeName);
+								writeFileSync(target, buf);
+								send(200, {
+									ok: true,
+									message: `已上传到 /assets/${category}/${safeName}`,
+									url: `/assets/${category}/${safeName}`,
+								});
+							} catch (e) {
+								send(500, {
+									ok: false,
+									message: `上传失败: ${e instanceof Error ? e.message : String(e)}`,
+								});
+							}
+						});
+						req.on("error", (e) =>
+							send(500, { ok: false, message: `上传异常: ${e.message}` }));
 					});
 				},
 			},

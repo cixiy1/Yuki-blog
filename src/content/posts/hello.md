@@ -8,6 +8,7 @@ tags:
 category: Yuki博客
 slug: hello-yuki-blog
 pinned: true
+comment: true
 ---
 你好，我是雪穗
 

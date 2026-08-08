@@ -1,7 +1,7 @@
 import type { CommentConfig } from "../types/commentConfig";
 
 export const commentConfig: CommentConfig = {
-	type: "none",
+	type: "giscus",
 	twikoo: {
 		envId: "https://twikoo.vercel.app",
 		lang: "zh-CN",
@@ -26,10 +26,10 @@ export const commentConfig: CommentConfig = {
 		visitorCount: true
 	},
 	giscus: {
-		repo: "CuteLeaf/Firefly",
-		repoId: "R_kgD2gfdFGd",
+		repo: "cixiy1/Yuki-blog",
+		repoId: "R_kgDOTx2vjg",
 		category: "General",
-		categoryId: "DIC_kwDOKy9HOc4CegmW",
+		categoryId: "DIC_kwDOTx2vjs4DC9oL",
 		mapping: "title",
 		strict: "0",
 		reactionsEnabled: "1",

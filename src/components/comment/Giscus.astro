@@ -10,45 +10,46 @@ const lightTheme = "light";
 const darkTheme = "dark";
 ---
 
-<!-- 
-  Giscus 官方Web Component用法，兼容Astro静态输出，无需import包，无需NPM依赖！
+<!--
+  Giscus 官方标准接入方式（giscus.app/client.js），兼容 Astro 静态输出，无需 NPM 依赖。
+  国内网络下 esm.sh 不可达，故不用动态 import，改用官方 script 标签方案。
   参考：https://giscus.app/ 详情配置说明
 -->
-<giscus-widget
-  id="comments"
-  repo={giscus.repo}
-  repoId={giscus.repoId}
-  category={giscus.category}
-  categoryId={giscus.categoryId}
-  mapping={giscus.mapping}
-  strict={giscus.strict}
-  reactionsEnabled={giscus.reactionsEnabled}
-  emitMetadata={giscus.emitMetadata}
-  inputPosition={giscus.inputPosition}
-  theme={lightTheme}
-  lang={giscus.lang}
-  loading={giscus.loading}
-/>
+<div class="giscus" id="comments" />
 
-<script is:inline define:vars={{ lightTheme, darkTheme }}>
-  const requestedPath = new URLSearchParams(window.location.search).get("path");
-  const widget = document.querySelector("giscus-widget");
-  if (requestedPath && widget) {
-    widget.setAttribute("mapping", "specific");
-    widget.setAttribute("term", requestedPath);
-  }
-
-  import("https://esm.sh/giscus");
+<script is:inline define:vars={{ lightTheme, darkTheme, giscus }}>
+  const widget = document.getElementById("comments");
 
   function updateGiscusTheme() {
-    const isDark = document.documentElement.classList.contains('dark');
+    const isDark = document.documentElement.classList.contains("dark");
     const theme = isDark ? darkTheme : lightTheme;
-    if (widget) {
-      widget.setAttribute('theme', theme);
+    const frame = document.querySelector(".giscus-frame");
+    if (frame && window.giscus) {
+      window.giscus.setConfig({ theme });
+    } else if (widget) {
+      widget.dataset.theme = theme;
     }
   }
 
-  // Initial update
+  const s = document.createElement("script");
+  s.src = "https://giscus.app/client.js";
+  s.async = true;
+  s.crossOrigin = "anonymous";
+  s.dataset.repo = giscus.repo;
+  s.dataset.repoId = giscus.repoId;
+  s.dataset.category = giscus.category;
+  s.dataset.categoryId = giscus.categoryId;
+  s.dataset.mapping = giscus.mapping;
+  s.dataset.strict = giscus.strict;
+  s.dataset.reactionsEnabled = giscus.reactionsEnabled;
+  s.dataset.emitMetadata = giscus.emitMetadata;
+  s.dataset.inputPosition = giscus.inputPosition;
+  s.dataset.theme = lightTheme;
+  s.dataset.lang = giscus.lang;
+  s.dataset.loading = giscus.loading;
+  document.body.appendChild(s);
+
+  // Initial theme
   updateGiscusTheme();
 
   // Clean up previous observer if exists
@@ -56,14 +57,13 @@ const darkTheme = "dark";
     window.giscusThemeObserver.disconnect();
   }
 
-  // Create new observer
+  // Theme observer
   window.giscusThemeObserver = new MutationObserver((mutations) => {
     mutations.forEach((mutation) => {
-      if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+      if (mutation.type === "attributes" && mutation.attributeName === "class") {
         updateGiscusTheme();
       }
     });
   });
-
   window.giscusThemeObserver.observe(document.documentElement, { attributes: true });
 </script>

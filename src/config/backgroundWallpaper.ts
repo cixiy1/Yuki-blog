@@ -27,16 +27,9 @@ export const backgroundWallpaper: BackgroundWallpaperConfig = {
 		playerMode: "random",
 		homeText: {
 			enable: true,
-			title: "Lovely firefly!",
+			title: "分明一觉华胥梦，回首东风泪满衣",
 			titleSize: "4.5rem",
-			subtitle: [
-				"In Reddened Chrysalis, I Once Rest",
-				"From Shattered Sky, I Free Fall",
-				"Amidst Silenced Stars, I Deep Sleep",
-				"Upon Lighted Fyrefly, I Soon Gaze",
-				"From Undreamt Night, I Thence Shine",
-				"In Finalized Morrow, I Full Bloom"
-			],
+			subtitle: [],
 			subtitleSize: "1.5rem",
 			typewriter: {
 				enable: true,
