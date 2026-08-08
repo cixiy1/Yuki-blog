@@ -50,7 +50,6 @@ const iconExists = $derived(() => {
 		class="inline-icon inline-flex items-center justify-center {className}"
 		style={style}
 		aria-hidden="true"
-		title="Icon not found: {icon}"
 	>
 		<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24">
 			<circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2" opacity="0.3"/>

@@ -41,3 +41,11 @@ package/
 .codex*
 .claude
 .mimocode
+
+# 管理台（仅本地使用，不推送 GitHub / 不上线）
+src/pages/admin.astro
+src/pages/api/admin/
+src/components/admin/
+src/utils/admin/
+src/config/adminConfig.ts
+src/types/adminConfig.ts

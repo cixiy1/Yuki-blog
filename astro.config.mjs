@@ -1,4 +1,6 @@
 import { setMaxListeners } from "node:events";
+import { writeFileSync } from "node:fs";
+import { basename, join, resolve } from "node:path";
 import cloudflare from "@astrojs/cloudflare";
 import { unified } from "@astrojs/markdown-remark";
 import mdx from "@astrojs/mdx";
@@ -332,7 +334,57 @@ export default defineConfig({
 		}),
 	},
 	vite: {
-		plugins: [tailwindcss()],
+		plugins: [
+			tailwindcss(),
+			// 管理台本地写入中间件（仅 dev server 生效，生产构建不加载）
+			// 静态站 API 路由不支持 POST，必须用 Vite 中间件处理
+			{
+				name: "admin-write-config",
+				configureServer(server) {
+					server.middlewares.use("/api/admin/write-config", (req, res, next) => {
+						if (req.method !== "POST") return next();
+						let raw = "";
+						req.on("data", (chunk) => (raw += chunk));
+						req.on("end", () => {
+							const send = (status, obj) => {
+								res.statusCode = status;
+								res.setHeader("Content-Type", "application/json");
+								res.end(JSON.stringify(obj));
+							};
+							try {
+								const body = JSON.parse(raw || "{}");
+								// 会话校验：body.session 为过期时间戳
+								const expiresAt = Number(body.session);
+								if (Number.isNaN(expiresAt) || Date.now() >= expiresAt) {
+									return send(401, { ok: false, message: "会话已过期，请重新登录" });
+								}
+								const { file, content } = body;
+								if (!file || typeof content !== "string") {
+									return send(400, { ok: false, message: "缺少 file 或 content" });
+								}
+								// 安全：只允许 src/config/ 下的 .ts 文件
+								const fileName = basename(file);
+								if (!fileName.endsWith(".ts") || fileName.startsWith(".")) {
+									return send(400, { ok: false, message: "不允许写入该文件" });
+								}
+								const configDir = resolve(process.cwd(), "src/config");
+								const target = join(configDir, fileName);
+								if (!target.startsWith(configDir)) {
+									return send(400, { ok: false, message: "路径不合法" });
+								}
+								writeFileSync(target, content, "utf-8");
+								send(200, { ok: true, message: `已写入 src/config/${fileName}` });
+							} catch (e) {
+								send(500, {
+									ok: false,
+									message: `写入失败: ${e instanceof Error ? e.message : String(e)}`,
+								});
+							}
+						});
+					});
+				},
+			},
+		],
 		server: {
 			watch: {
 				ignored: ["**/package/**", "**/Firefly-docs/**"],
