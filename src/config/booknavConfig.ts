@@ -35,37 +35,34 @@ export const booknavConfig: BooknavGroup[] = [
 				title: "GitHub",
 				url: "https://github.com",
 				desc: "全球最大的代码托管平台",
-				// icon 字段可以使用 astro-icon 图标库的图标名称
-				// 也可以使用图片 URL 和本地图片路径
-				// 不填则会通过接口自动获取目标站点的 favicon 图标（需要在上面配置）
 				icon: "fa7-brands:github",
-				weight: 10,
+				weight: 10
 			},
 			{
 				title: "MDN Web Docs",
 				url: "https://developer.mozilla.org",
 				desc: "最权威的 Web 技术文档",
-				weight: 9,
+				weight: 9
 			},
 			{
 				title: "Astro",
 				url: "https://astro.build",
 				desc: "内容驱动型网站的 Web 框架",
-				weight: 8,
+				weight: 8
 			},
 			{
 				title: "Svelte",
 				url: "https://svelte.dev",
 				desc: "把组件编译成高效原生 JS 的框架",
-				weight: 7,
+				weight: 7
 			},
 			{
 				title: "Tailwind CSS",
 				url: "https://tailwindcss.com",
 				desc: "一个功能强大且灵活的 CSS 框架",
-				weight: 6,
-			},
-		],
+				weight: 6
+			}
+		]
 	},
 	{
 		id: "opensource",
@@ -79,9 +76,9 @@ export const booknavConfig: BooknavGroup[] = [
 				url: "https://github.com/CuteLeaf/Firefly",
 				desc: "清晰美观的 Astro 个人博客主题模板",
 				icon: "/favicon/firefly-32.png",
-				weight: 10,
-			},
-		],
+				weight: 10
+			}
+		]
 	},
 	{
 		id: "design",
@@ -94,15 +91,15 @@ export const booknavConfig: BooknavGroup[] = [
 				title: "Iconify",
 				url: "https://icon-sets.iconify.design",
 				desc: "海量开源图标集合搜索",
-				weight: 10,
+				weight: 10
 			},
 			{
 				title: "iconfont",
 				url: "https://www.iconfont.cn",
 				desc: "阿里巴巴矢量图标库",
-				weight: 9,
-			},
-		],
+				weight: 9
+			}
+		]
 	},
 	{
 		id: "tools",
@@ -115,21 +112,21 @@ export const booknavConfig: BooknavGroup[] = [
 				title: "TinyPNG",
 				url: "https://tinypng.com",
 				desc: "在线压缩 PNG / JPEG 图片",
-				weight: 10,
+				weight: 10
 			},
 			{
 				title: "Squoosh",
 				url: "https://squoosh.app",
 				desc: "Google 出品的图片压缩与格式转换",
-				weight: 9,
+				weight: 9
 			},
 			{
 				title: "Carbon",
 				url: "https://carbon.now.sh",
 				desc: "把代码片段生成漂亮的图片",
-				weight: 8,
-			},
-		],
+				weight: 8
+			}
+		]
 	},
 	{
 		id: "resources",
@@ -143,14 +140,14 @@ export const booknavConfig: BooknavGroup[] = [
 				url: "https://docs-firefly.cuteleaf.cn",
 				desc: "Firefly 主题模板文档",
 				icon: "https://docs-firefly.cuteleaf.cn/logo.png",
-				weight: 10,
+				weight: 10
 			},
 			{
 				title: "夏夜流萤",
 				url: "https://blog.cuteleaf.cn",
 				desc: "飞萤之火自无梦的长夜亮起",
-				weight: 9,
-			},
-		],
-	},
+				weight: 9
+			}
+		]
+	}
 ];
