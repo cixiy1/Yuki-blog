@@ -16,8 +16,8 @@ export const musicPlayerConfig: MusicPlayerConfig = {
 		auth: "",
 		fallbackApis: [
 			"https://api.injahow.cn/meting/?server=:server&type=:type&id=:id",
-			"https://api.moeyao.cn/meting/?server=:server&type=:type&id=:id"
-		]
+			"https://api.moeyao.cn/meting/?server=:server&type=:type&id=:id",
+		],
 	},
 	local: {
 		playlist: [
@@ -26,8 +26,8 @@ export const musicPlayerConfig: MusicPlayerConfig = {
 				artist: "Suki刘舒妤",
 				url: "/assets/music/shimian-suki.flac",
 				cover: "",
-				lrc: ""
-			}
-		]
-	}
+				lrc: "",
+			},
+		],
+	},
 };
