@@ -7,7 +7,7 @@ const SITE_LANG = "zh_CN";
 export const siteConfig: SiteConfig = {
 	title: "Yuki Blog",
 	subtitle: "雪穗博客",
-	site_url: "https://yuki-blog.2132539636.workers.dev",
+	site_url: "https://yiyu24.top",
 	description: "雪穗博客（Yuki Blog）",
 	keywords: [
 		"Yuki",
