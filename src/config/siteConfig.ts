@@ -8,7 +8,7 @@ export const siteConfig: SiteConfig = {
 	title: "Yuki Blog",
 	subtitle: "雪穗博客",
 	site_url: "https://yuki-blog.2132539636.workers.dev",
-	description: "雪穗博客（Yuki Blog）  ",
+	description: "雪穗博客（Yuki Blog）",
 	keywords: [
 		"Yuki",
 		"Yuki Blog",
@@ -20,13 +20,13 @@ export const siteConfig: SiteConfig = {
 		"静态博客"
 	],
 	themeColor: {
-		hue: 260,
+		hue: 235,
 		defaultMode: "system"
 	},
 	pageWidth: 100,
 	card: {
 		border: false,
-		followTheme: false
+		followTheme: true
 	},
 	favicon: [
 		{
@@ -52,7 +52,7 @@ export const siteConfig: SiteConfig = {
 		friends: true,
 		sponsor: true,
 		guestbook: true,
-		bangumi: true,
+		bangumi: false,
 		gallery: true,
 		anime: false,
 		dynamic: true,
@@ -88,7 +88,7 @@ export const siteConfig: SiteConfig = {
 	post: {
 		rehypeCallouts: {
 			theme: "github",
-			enablePythonMarkdownAdmonitions: false
+			enablePythonMarkdownAdmonitions: true
 		},
 		showLastModified: true,
 		outdatedThreshold: 30,
