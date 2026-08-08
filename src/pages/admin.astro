@@ -1,0 +1,175 @@
+---
+/**
+ * 管理台页面 /admin/
+ *
+ * 构建时将所有可编辑配置序列化为 JSON 注入页面，
+ * 前端表单编辑后通过 GitHub API 提交，触发 Cloudflare 自动重建。
+ */
+import AdminApp from "@/components/admin/AdminApp.svelte";
+import { adminConfig } from "@/config/adminConfig";
+import { configManifest } from "@/utils/admin/config-manifest";
+
+// ---- 构建时读取所有配置并序列化 ----
+// 逐个导入（不通过 index.ts 避免引入不必要的依赖）
+import { siteConfig } from "@/config/siteConfig";
+import { profileConfig } from "@/config/profileConfig";
+import { announcementConfig } from "@/config/announcementConfig";
+import { commentConfig } from "@/config/commentConfig";
+import { coverImageConfig } from "@/config/coverImageConfig";
+import { displaySettingsConfig } from "@/config/displaySettingsConfig";
+import { dynamicConfig } from "@/config/dynamicConfig";
+import { sakuraConfig } from "@/config/effectsConfig";
+import { expressiveCodeConfig } from "@/config/expressiveCodeConfig";
+import { footerConfig } from "@/config/footerConfig";
+import { friendsConfig } from "@/config/friendsConfig";
+import { galleryConfig } from "@/config/galleryConfig";
+import { licenseConfig } from "@/config/licenseConfig";
+import { mermaidConfig } from "@/config/mermaidConfig";
+import { musicPlayerConfig } from "@/config/musicConfig";
+import { plantumlConfig } from "@/config/plantumlConfig";
+import { sponsorConfig } from "@/config/sponsorConfig";
+import { analyticsConfig } from "@/config/analyticsConfig";
+import { backgroundWallpaper } from "@/config/backgroundWallpaper";
+import { booknavConfig } from "@/config/booknavConfig";
+
+// ---- 读取原始文件内容（用于补丁式更新，保留注释和其他导出）----
+import siteConfigRaw from "@/config/siteConfig.ts?raw";
+import profileConfigRaw from "@/config/profileConfig.ts?raw";
+import announcementConfigRaw from "@/config/announcementConfig.ts?raw";
+import commentConfigRaw from "@/config/commentConfig.ts?raw";
+import coverImageConfigRaw from "@/config/coverImageConfig.ts?raw";
+import displaySettingsConfigRaw from "@/config/displaySettingsConfig.ts?raw";
+import dynamicConfigRaw from "@/config/dynamicConfig.ts?raw";
+import effectsConfigRaw from "@/config/effectsConfig.ts?raw";
+import expressiveCodeConfigRaw from "@/config/expressiveCodeConfig.ts?raw";
+import footerConfigRaw from "@/config/footerConfig.ts?raw";
+import friendsConfigRaw from "@/config/friendsConfig.ts?raw";
+import galleryConfigRaw from "@/config/galleryConfig.ts?raw";
+import licenseConfigRaw from "@/config/licenseConfig.ts?raw";
+import mermaidConfigRaw from "@/config/mermaidConfig.ts?raw";
+import musicConfigRaw from "@/config/musicConfig.ts?raw";
+import plantumlConfigRaw from "@/config/plantumlConfig.ts?raw";
+import sponsorConfigRaw from "@/config/sponsorConfig.ts?raw";
+import analyticsConfigRaw from "@/config/analyticsConfig.ts?raw";
+import backgroundWallpaperRaw from "@/config/backgroundWallpaper.ts?raw";
+import booknavConfigRaw from "@/config/booknavConfig.ts?raw";
+
+// 序列化为可编辑的 JSON（处理 undefined 等）
+function serialize<T>(value: T): T {
+	return JSON.parse(JSON.stringify(value));
+}
+
+const initialConfigs: Record<string, unknown> = {
+	siteConfig: serialize(siteConfig),
+	profileConfig: serialize(profileConfig),
+	announcementConfig: serialize(announcementConfig),
+	commentConfig: serialize(commentConfig),
+	coverImageConfig: serialize(coverImageConfig),
+	displaySettingsConfig: serialize(displaySettingsConfig),
+	dynamicConfig: serialize(dynamicConfig),
+	sakuraConfig: serialize(sakuraConfig),
+	expressiveCodeConfig: serialize(expressiveCodeConfig),
+	footerConfig: serialize(footerConfig),
+	friendsConfig: serialize(friendsConfig),
+	galleryConfig: serialize(galleryConfig),
+	licenseConfig: serialize(licenseConfig),
+	mermaidConfig: serialize(mermaidConfig),
+	musicPlayerConfig: serialize(musicPlayerConfig),
+	plantumlConfig: serialize(plantumlConfig),
+	sponsorConfig: serialize(sponsorConfig),
+	analyticsConfig: serialize(analyticsConfig),
+	backgroundWallpaper: serialize(backgroundWallpaper),
+	booknavConfig: serialize(booknavConfig),
+};
+
+const initialFileContents: Record<string, string> = {
+	siteConfig: siteConfigRaw,
+	profileConfig: profileConfigRaw,
+	announcementConfig: announcementConfigRaw,
+	commentConfig: commentConfigRaw,
+	coverImageConfig: coverImageConfigRaw,
+	displaySettingsConfig: displaySettingsConfigRaw,
+	dynamicConfig: dynamicConfigRaw,
+	sakuraConfig: effectsConfigRaw,
+	expressiveCodeConfig: expressiveCodeConfigRaw,
+	footerConfig: footerConfigRaw,
+	friendsConfig: friendsConfigRaw,
+	galleryConfig: galleryConfigRaw,
+	licenseConfig: licenseConfigRaw,
+	mermaidConfig: mermaidConfigRaw,
+	musicPlayerConfig: musicConfigRaw,
+	plantumlConfig: plantumlConfigRaw,
+	sponsorConfig: sponsorConfigRaw,
+	analyticsConfig: analyticsConfigRaw,
+	backgroundWallpaper: backgroundWallpaperRaw,
+	booknavConfig: booknavConfigRaw,
+};
+
+const repo = { owner: "cixiy1", repo: "Yuki-blog" };
+const { username, passwordHash, sessionTimeoutMinutes } = adminConfig;
+
+// 页面标题
+const pageTitle = "博客管理台";
+---
+
+<!doctype html>
+<html lang="zh-CN">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>{pageTitle} - Yuki Blog</title>
+		<meta name="robots" content="noindex, nofollow" />
+		<style>
+			/* 最小化主题变量，管理台独立样式由 Svelte 组件自带 */
+			:root {
+				--primary: #4c8dff;
+				--page-bg: #f4f5f7;
+			}
+			html[data-theme="dark"] {
+				--page-bg: #17181a;
+			}
+			body {
+				margin: 0;
+				font-family:
+					system-ui,
+					-apple-system,
+					"Segoe UI",
+					Roboto,
+					"PingFang SC",
+					"Microsoft YaHei",
+					sans-serif;
+				background: var(--page-bg);
+				color: #1a1a1a;
+			}
+			html[data-theme="dark"] body {
+				color: #e5e5e5;
+			}
+			* {
+				box-sizing: border-box;
+			}
+		</style>
+		<script is:inline>
+			// 跟随系统/本地主题色（简单版本）
+			(function () {
+				var stored = localStorage.getItem("theme");
+				var dark =
+					stored === "dark" ||
+					(!stored &&
+						window.matchMedia("(prefers-color-scheme: dark)").matches);
+				document.documentElement.setAttribute("data-theme", dark ? "dark" : "light");
+			})();
+		</script>
+	</head>
+	<body>
+		<AdminApp
+			client:load
+			manifest={configManifest}
+			initialConfigs={initialConfigs}
+			initialFileContents={initialFileContents}
+			repo={repo}
+			username={username}
+			passwordHash={passwordHash}
+			sessionTimeoutMinutes={sessionTimeoutMinutes}
+		/>
+	</body>
+</html>
