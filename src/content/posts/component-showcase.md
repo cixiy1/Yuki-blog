@@ -5,6 +5,7 @@ description: 一篇集齐 Firefly 主题所有写作组件的示例文章，方�
 tags: [示例, 组件, Markdown, Firefly]
 category: 文章示例
 slug: component-showcase
+draft: true
 ---
 
 这篇文章把 Firefly 主题支持的组件都展示一遍，想用哪个直接复制代码段即可。
