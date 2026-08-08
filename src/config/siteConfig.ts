@@ -8,7 +8,7 @@ export const siteConfig: SiteConfig = {
 	title: "Yuki Blog",
 	subtitle: "雪穗博客",
 	site_url: "https://yuki-blog.2132539636.workers.dev",
-	description: "雪穗博客（Yuki Blog）是一个基于 Astro 和 Firefly 主题搭建的个人博客，记录生活点滴与技术学习笔记。",
+	description: "雪穗博客（Yuki Blog）  ",
 	keywords: [
 		"Yuki",
 		"Yuki Blog",
