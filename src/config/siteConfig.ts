@@ -6,9 +6,9 @@ const SITE_LANG = "zh_CN";
 
 export const siteConfig: SiteConfig = {
 	title: "Yuki Blog",
-	subtitle: "雪穗的博客",
-	site_url: "https://yuki-blog.2132539636.workers.dev",
-	description: "雪穗博客（Yuki Blog）是一个基于 Astro 和 Firefly 主题搭建的个人博客，记录生活点滴与技术学习笔记。",
+	subtitle: "雪穗博客",
+	site_url: "https://yiyu14.top",
+	description: "雪穗博客（Yuki Blog）。",
 	keywords: [
 		"Yuki",
 		"Yuki Blog",
@@ -26,7 +26,7 @@ export const siteConfig: SiteConfig = {
 	pageWidth: 100,
 	card: {
 		border: false,
-		followTheme: false
+		followTheme: true
 	},
 	favicon: [
 		{
@@ -43,7 +43,7 @@ export const siteConfig: SiteConfig = {
 		title: "Yuki Blog",
 		widthFull: false,
 		menuAlign: "center",
-		followTheme: false,
+		followTheme: true,
 		stickyNavbar: true
 	},
 	siteStartDate: "2026-08-09",
