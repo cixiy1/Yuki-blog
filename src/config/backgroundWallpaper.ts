@@ -5,20 +5,10 @@ export const backgroundWallpaper: BackgroundWallpaperConfig = {
 	playerEnable: true,
 	src: {
 		desktop: [
-			"assets/images/DesktopWallpaper/d1.avif",
-			"assets/images/DesktopWallpaper/d2.avif",
-			"assets/images/DesktopWallpaper/d3.avif",
-			"assets/images/DesktopWallpaper/d4.avif",
-			"assets/images/DesktopWallpaper/d5.avif",
-			"assets/images/DesktopWallpaper/d6.avif"
+			"assets/images/DesktopWallpaper/spider-man.jpg"
 		],
 		mobile: [
-			"assets/images/MobileWallpaper/m1.avif",
-			"assets/images/MobileWallpaper/m2.avif",
-			"assets/images/MobileWallpaper/m3.avif",
-			"assets/images/MobileWallpaper/m4.avif",
-			"assets/images/MobileWallpaper/m5.avif",
-			"assets/images/MobileWallpaper/m6.avif"
+			"assets/images/MobileWallpaper/spider-man.jpg"
 		],
 		playerUrl: "https://bed.twoleaf.cn/file/1785658612716_firefly.mp4"
 	},
