@@ -20,12 +20,12 @@ export const siteConfig: SiteConfig = {
 		"静态博客"
 	],
 	themeColor: {
-		hue: 235,
+		hue: 180,
 		defaultMode: "system"
 	},
 	pageWidth: 100,
 	card: {
-		border: false,
+		border: true,
 		followTheme: true
 	},
 	favicon: [
