@@ -41,6 +41,7 @@ package/
 .codex*
 .claude
 .mimocode
+.workbuddy/
 
 # 管理台（仅本地使用，不推送 GitHub / 不上线）
 src/pages/admin.astro
