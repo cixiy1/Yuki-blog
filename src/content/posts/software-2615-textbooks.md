@@ -103,7 +103,6 @@ html.dark .books-root{
 <div class="bks-stats">
 <div class="bks-stat"><span class="k">每生定价合计</span><span class="v">¥466.10</span></div>
 <div class="bks-stat hl"><span class="k">每生折后合计</span><span class="v">¥374.77</span></div>
-<div class="bks-stat"><span class="k">全班折后实洋（50 人）</span><span class="v">¥18,738.90</span></div>
 </div>
 <div class="bks-list">
 <div class="bk"><div class="bk-no">01</div><div class="bk-main"><div class="bk-course">Web应用开发</div><div class="bk-name">Web前端开发基础</div><div class="bk-press">北京理工大学出版社</div></div><div class="bk-price"><div class="bk-old">¥57.00</div><div class="bk-new">¥44.46</div><div class="bk-tag">78折</div></div></div>
@@ -120,7 +119,6 @@ html.dark .books-root{
 <div class="bks-foot">
 <div class="bks-note">数据摘自学院《附件1：新生教材单价表-北校区》。合计为原表「班级合计」行的值。</div>
 <div class="bks-note">两门思政课教材<b>不打折</b>（<b>毛泽东思想和中国特色社会主义理论体系概论</b>、<b>习近平新时代中国特色社会主义思想概论</b>），其余 8 本均为 <b>78 折</b>。</div>
-<div class="bks-note">原表「折后实洋」是逐本四舍五入后再汇总，所以与「每生折后合计 × 50」会差几角（<b>¥0.40</b>），属舍入口径差异，不是算错。</div>
 </div>
 </div>
 
@@ -129,7 +127,6 @@ html.dark .books-root{
 几处按原表口径补充一下：
 
 - 10 本按**定价**合计每生 **466.10 元**，按**折后价**合计每生 **374.77 元**，相差 **91.33 元**。
-- 全班 50 人按折后价计，实洋 **18,738.90 元**（原表「班级合计」行给出的值）。
 - 表中两门思政课教材折扣记为 `1`（即不打折），并非漏填，其余 8 本为 `0.78`。
 
 教材种类与数量以班级实际发放为准；若遇换书、补订或退换，以学院和班主任的最新通知为准。
