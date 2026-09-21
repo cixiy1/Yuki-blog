@@ -41,9 +41,9 @@
     { "id": "c07", "day": 3, "slot": "1-2", "name": "Web应用开发A", "short": "Web", "room": "强能楼506", "teacher": "李玲", "weeks": "4-12,15-19" },
     { "id": "c08", "day": 3, "slot": "3-4", "name": "程序设计基础(Java)", "short": "Java", "room": "强能楼508", "teacher": "罗耀", "weeks": "5-12,15-19" },
     { "id": "c09", "day": 3, "slot": "5-6", "name": "形势与政策(一)A", "short": "形势与政策", "room": "修德楼102", "teacher": "郑智华", "weeks": "16-17" },
+    { "id": "c12", "day": 3, "slot": "7-8", "name": "体育与健康(一)A", "short": "体育", "room": "羽毛球馆(体育馆二楼)", "teacher": "赖志松", "weeks": "4-12,15-19" },
     { "id": "c10", "day": 3, "slot": "9-10", "name": "程序设计基础(Java)", "short": "Java", "room": "强能楼508", "teacher": "罗耀", "weeks": "4" },
     { "id": "c11", "day": 4, "slot": "1-2", "name": "毛泽东思想和中国特色社会主义理论体系概论", "short": "毛概", "room": "强能楼816", "teacher": "郑智华", "weeks": "4-12,15-19" },
-    { "id": "c12", "day": 4, "slot": "7-8", "name": "体育与健康(一)A", "short": "体育", "room": "羽毛球馆(体育馆二楼)", "teacher": "赖志松", "weeks": "4-12,15-19" },
     { "id": "c13", "day": 4, "slot": "9-10", "name": "程序设计基础(Java)", "short": "Java", "room": "强能楼508", "teacher": "罗耀", "weeks": "4-12,15-19" },
     { "id": "c14", "day": 5, "slot": "1-2", "name": "Web应用开发A", "short": "Web", "room": "强能楼506", "teacher": "李玲", "weeks": "4-12,15-19" },
     { "id": "c15", "day": 5, "slot": "3-4", "name": "习近平新时代中国特色社会主义思想概论", "short": "习概", "room": "修德楼201", "teacher": "覃姣媚", "weeks": "4-12,15-19" }
