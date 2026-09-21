@@ -7,9 +7,34 @@
 	var DAYS = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"];
 	var SLOTS = ["1-2", "3-4", "5-6", "7-8", "9-10"];
 	var DATA = null;
+	var CUSTOM_SLOTS = {};
 	var week = 1;
 	var realWeek = 1;
 	var today = new Date();
+
+	function slotInfo(key) {
+		return (DATA.meta.slots && DATA.meta.slots[key]) || CUSTOM_SLOTS[key] || {};
+	}
+	/* 支持"临时新增"落在非标准时段（如 15:45），行按起始时间排序。 */
+	function sortKey(t) {
+		var m = String(t || "").match(/(\d{1,2}:\d{2})/);
+		return m ? m[1] : "99:99";
+	}
+	function buildRows() {
+		var rows = SLOTS.map(function (sk) {
+			var st = slotInfo(sk);
+			return { key: sk, label: st.label || sk, time: st.time || "" };
+		});
+		Object.keys(CUSTOM_SLOTS).forEach(function (k) {
+			var st = CUSTOM_SLOTS[k];
+			rows.push({ key: k, label: st.label || "临时", time: st.time || "" });
+		});
+		rows.sort(function (a, b) {
+			var ka = sortKey(a.time), kb = sortKey(b.time);
+			return ka < kb ? -1 : ka > kb ? 1 : 0;
+		});
+		return rows;
+	}
 
 	function esc(s) {
 		return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) {
@@ -48,6 +73,7 @@
 	function build(w) {
 		var notes = [];
 		var entries = [];
+		CUSTOM_SLOTS = {};
 		DATA.courses.forEach(function (c) {
 			entries.push({
 				id: c.id, day: c.day, slot: c.slot, name: c.name,
@@ -63,10 +89,14 @@
 			var t = ov.type || "note";
 			if (t === "note") { notes.push(ov.text || ov.note || ""); return; }
 			if (t === "add") {
+				if (ov.time && !(DATA.meta.slots && DATA.meta.slots[ov.slot])) {
+					CUSTOM_SLOTS[ov.slot] = { label: ov.slotLabel || "临时", time: ov.time };
+				}
 				entries.push({
 					id: ov.id || "tmp" + entries.length, day: ov.day, slot: ov.slot,
 					name: ov.name || "", short: ov.short || ov.name || "", room: ov.room || "",
-					teacher: ov.teacher || "", active: true, cancelled: false, temp: true,
+					teacher: ov.teacher || "", time: ov.time || "",
+					active: true, cancelled: false, temp: true,
 					changes: [{ t: "add", note: ov.note || "" }]
 				});
 				return;
@@ -102,7 +132,12 @@
 		if (ch.t === "move") return s + " 调整到 " + DAYS[e.day - 1] + " " + e.slot + " 节" + (e.room ? "（" + e.room + "）" : "");
 		if (ch.t === "cancel") return s + " 停课";
 		if (ch.t === "swap") return s + (ch.with ? " 与 " + ch.with + " 对调上课时间" : " 与其他课程对调上课时间");
-		if (ch.t === "add") return "临时新增：" + (e.name || s) + (e.room ? "（" + e.room + "）" : "");
+		if (ch.t === "add") {
+			var s2 = "临时新增：" + (e.name || s);
+			if (e.room) s2 += "（" + e.room + "）";
+			if (e.time) s2 += " " + e.time;
+			return s2;
+		}
 		return s + " 有调整";
 	}
 
@@ -135,8 +170,10 @@
 		}
 		html += "</div>";
 
-		SLOTS.forEach(function (sk) {
-			var st = DATA.meta.slots[sk] || {};
+		var rows = buildRows();
+		rows.forEach(function (row) {
+			var sk = row.key;
+			var st = slotInfo(sk);
 			html += '<div class="tt-row"><i class="tt-sl">' + (st.label || sk) +
 				"<em>" + (st.time || "") + "</em></i>";
 			for (var d = 1; d <= maxDay; d++) {
@@ -198,7 +235,7 @@
 				return a.day - b.day || SLOTS.indexOf(a.slot) - SLOTS.indexOf(b.slot);
 			});
 			list.innerHTML = on.map(function (e) {
-				var st = DATA.meta.slots[e.slot] || {};
+				var st = slotInfo(e.slot);
 				return '<li><b>' + esc(e.short) + "</b><span>" + DAYS[e.day - 1] + " " +
 					(st.label || e.slot) + " " + (st.time || "") + "</span><span>" + esc(e.room) + "</span></li>";
 			}).join("");
