@@ -1,0 +1,258 @@
+/* 软件2615 动态课表 —— 读取 /assets/data/schedule-2615.json 渲染，支持周次切换与临时调整。 */
+(function () {
+	var DATA_URL = "/assets/data/schedule-2615.json";
+	var root = document.querySelector(".tt-root");
+	if (!root) return;
+
+	var DAYS = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"];
+	var SLOTS = ["1-2", "3-4", "5-6", "7-8", "9-10"];
+	var DATA = null;
+	var week = 1;
+	var realWeek = 1;
+	var today = new Date();
+
+	function esc(s) {
+		return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) {
+			return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c];
+		});
+	}
+	function monday(w) {
+		var p = DATA.meta.week1Monday.split("-");
+		var d = new Date(+p[0], +p[1] - 1, +p[2]);
+		d.setDate(d.getDate() + (w - 1) * 7);
+		return d;
+	}
+	function fmt(d) {
+		return d.getMonth() + 1 + "/" + d.getDate();
+	}
+	function parseWeeks(v) {
+		var out = [];
+		if (Array.isArray(v)) {
+			v.forEach(function (x) { out.push(+x); });
+			return out;
+		}
+		String(v || "").split(/[,，]/).forEach(function (p) {
+			p = p.trim();
+			if (!p) return;
+			var m = p.match(/^(\d+)\s*[-~—]\s*(\d+)$/);
+			if (m) { for (var i = +m[1]; i <= +m[2]; i++) out.push(i); }
+			else if (/^\d+$/.test(p)) out.push(+p);
+		});
+		return out;
+	}
+	function calcRealWeek() {
+		var t = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+		return Math.floor(Math.round((t - monday(1)) / 86400000) / 7) + 1;
+	}
+
+	function build(w) {
+		var notes = [];
+		var entries = [];
+		DATA.courses.forEach(function (c) {
+			entries.push({
+				id: c.id, day: c.day, slot: c.slot, name: c.name,
+				short: c.short || c.name, room: c.room || "", teacher: c.teacher || "",
+				active: parseWeeks(c.weeks).indexOf(w) >= 0, cancelled: false,
+				temp: false, changes: []
+			});
+		});
+		var byId = {};
+		entries.forEach(function (e) { byId[e.id] = e; });
+		(DATA.overrides || []).forEach(function (ov) {
+			if (parseWeeks(ov.weeks).indexOf(w) < 0) return;
+			var t = ov.type || "note";
+			if (t === "note") { notes.push(ov.text || ov.note || ""); return; }
+			if (t === "add") {
+				entries.push({
+					id: ov.id || "tmp" + entries.length, day: ov.day, slot: ov.slot,
+					name: ov.name || "", short: ov.short || ov.name || "", room: ov.room || "",
+					teacher: ov.teacher || "", active: true, cancelled: false, temp: true,
+					changes: [{ t: "add", note: ov.note || "" }]
+				});
+				return;
+			}
+			if (t === "swap") {
+				var a = byId[ov.a], b = byId[ov.b];
+				if (a && b) {
+					var ad = a.day, as = a.slot;
+					a.day = b.day; a.slot = b.slot; b.day = ad; b.slot = as;
+					a.changes.push({ t: "swap", note: ov.note || "", with: b.short || b.name });
+					b.changes.push({ t: "swap", note: ov.note || "", with: a.short || a.name });
+				}
+				return;
+			}
+			var e = byId[ov.id];
+			if (!e) return;
+			if (t === "cancel") { e.active = false; e.cancelled = true; e.changes.push({ t: "cancel", note: ov.note || "" }); }
+			else if (t === "room") { e.room = ov.room || e.room; e.changes.push({ t: "room", note: ov.note || "" }); }
+			else if (t === "move") {
+				if (ov.day) e.day = ov.day;
+				if (ov.slot) e.slot = ov.slot;
+				if (ov.room) e.room = ov.room;
+				e.active = true;
+				e.changes.push({ t: "move", note: ov.note || "" });
+			}
+		});
+		return { entries: entries, notes: notes };
+	}
+
+	function changeText(e, ch) {
+		var s = e.short || e.name;
+		if (ch.t === "room") return s + " 上课地点改为 " + e.room;
+		if (ch.t === "move") return s + " 调整到 " + DAYS[e.day - 1] + " " + e.slot + " 节" + (e.room ? "（" + e.room + "）" : "");
+		if (ch.t === "cancel") return s + " 停课";
+		if (ch.t === "swap") return s + (ch.with ? " 与 " + ch.with + " 对调上课时间" : " 与其他课程对调上课时间");
+		if (ch.t === "add") return "临时新增：" + (e.name || s) + (e.room ? "（" + e.room + "）" : "");
+		return s + " 有调整";
+	}
+
+	function render() {
+		var res = build(week);
+		var mon = monday(week);
+		var sun = new Date(mon.getTime());
+		sun.setDate(sun.getDate() + 6);
+		var todayIdx = today.getDay() === 0 ? 7 : today.getDay();
+		var isNow = week === realWeek;
+
+		var maxDay = 5;
+		res.entries.forEach(function (e) { if (e.day > maxDay) maxDay = e.day; });
+		if (maxDay > 7) maxDay = 7;
+
+		var head = document.getElementById("tt-week");
+		if (head) {
+			head.innerHTML =
+				'<b>第 ' + week + ' 周</b>' +
+				'<span class="tt-wdate">' + fmt(mon) + " – " + fmt(sun) + "</span>" +
+				(isNow ? '<i class="tt-now">本周</i>' : "");
+		}
+
+		var html = '<div class="tt-row tt-row-h"><i class="tt-sl"></i>';
+		for (var d = 1; d <= maxDay; d++) {
+			var dd = new Date(mon.getTime());
+			dd.setDate(dd.getDate() + d - 1);
+			html += '<span class="tt-dh' + (isNow && d === todayIdx ? " is-today" : "") + '">' +
+				DAYS[d - 1] + '<em>' + fmt(dd) + "</em></span>";
+		}
+		html += "</div>";
+
+		SLOTS.forEach(function (sk) {
+			var st = DATA.meta.slots[sk] || {};
+			html += '<div class="tt-row"><i class="tt-sl">' + (st.label || sk) +
+				"<em>" + (st.time || "") + "</em></i>";
+			for (var d = 1; d <= maxDay; d++) {
+				var cell = null;
+				res.entries.forEach(function (e) { if (e.day === d && e.slot === sk) cell = e; });
+				if (!cell) { html += '<div class="tt-cell is-empty"></div>'; continue; }
+				var cls = "tt-cell " + (cell.cancelled ? "is-cancel" : cell.active ? (cell.temp ? "is-add" : "is-on") : "is-off");
+				var flag = "";
+				if (cell.changes.length) {
+					var t = cell.changes[0].t;
+					var lb = t === "room" ? "改地点" : t === "move" ? "调课" : t === "cancel" ? "停课" : t === "add" ? "新增" : "对调";
+					flag = '<u class="tt-flag f-' + t + '">' + lb + "</u>";
+				} else if (!cell.active && !cell.cancelled) {
+					flag = '<u class="tt-flag f-off">非本周</u>';
+				}
+				var tip = cell.name + (cell.teacher ? " · " + cell.teacher : "") +
+					(cell.room ? " · " + cell.room : "") + " · " + DAYS[d - 1] + " " + (st.label || sk) + " " + (st.time || "");
+				html += '<div class="' + cls + (isNow && d === todayIdx ? " is-today" : "") +
+					'" title="' + esc(tip) + '"><b>' + esc(cell.short) + "</b>" +
+					(cell.room ? "<span>" + esc(cell.room) + "</span>" : "") + flag + "</div>";
+			}
+			html += "</div>";
+		});
+
+		var grid = document.getElementById("tt-grid");
+		if (grid) { grid.style.setProperty("--tt-cols", maxDay); grid.innerHTML = html; }
+
+		var chg = [];
+		var seen = {};
+		res.entries.forEach(function (e) {
+			e.changes.forEach(function (c) {
+				var txt = changeText(e, c);
+				if (c.note) txt += "：" + c.note;
+				if (seen[txt]) return;
+				seen[txt] = 1;
+				chg.push({ t: c.t, txt: txt });
+			});
+		});
+		res.notes.forEach(function (n) { if (n) chg.push({ t: "note", txt: n }); });
+		(DATA.meta.practice || []).forEach(function (p) {
+			if (parseWeeks(p.weeks).indexOf(week) >= 0) {
+				chg.push({ t: "note", txt: "整周实践：" + p.name + (p.teacher ? "（" + p.teacher + "）" : "") + "，" + (p.note || "") });
+			}
+		});
+		var box = document.getElementById("tt-changes");
+		if (box) {
+			if (!chg.length) { box.innerHTML = ""; box.className = "tt-changes is-empty"; }
+			else {
+				box.className = "tt-changes";
+				box.innerHTML = "<h4>本周调整</h4><ul>" + chg.map(function (c) {
+					return '<li class="li-' + c.t + '">' + esc(c.txt) + "</li>";
+				}).join("") + "</ul>";
+			}
+		}
+
+		var list = document.getElementById("tt-list");
+		if (list) {
+			var on = res.entries.filter(function (e) { return e.active; }).sort(function (a, b) {
+				return a.day - b.day || SLOTS.indexOf(a.slot) - SLOTS.indexOf(b.slot);
+			});
+			list.innerHTML = on.map(function (e) {
+				var st = DATA.meta.slots[e.slot] || {};
+				return '<li><b>' + esc(e.short) + "</b><span>" + DAYS[e.day - 1] + " " +
+					(st.label || e.slot) + " " + (st.time || "") + "</span><span>" + esc(e.room) + "</span></li>";
+			}).join("");
+		}
+	}
+
+	function renderPeriods() {
+		var box = document.getElementById("tt-periods");
+		if (!box) return;
+		box.innerHTML = (DATA.meta.periods || []).map(function (p) {
+			return "<li><b>" + esc(p.name) + "</b><span>" +
+				(p.start ? p.start + "–" + p.end : "—") + "</span></li>";
+		}).join("");
+	}
+
+	function setWeek(w) {
+		var max = DATA.meta.totalWeeks || 19;
+		if (w < 1) w = 1;
+		if (w > max) w = max;
+		week = w;
+		var sel = document.getElementById("tt-select");
+		if (sel) sel.value = w;
+		render();
+	}
+
+	fetch(DATA_URL, { cache: "no-store" })
+		.then(function (r) { return r.json(); })
+		.then(function (d) {
+			DATA = d;
+			realWeek = calcRealWeek();
+			var sel = document.getElementById("tt-select");
+			if (sel) {
+				var max = d.meta.totalWeeks || 19;
+				var opts = "";
+				for (var i = 1; i <= max; i++) opts += '<option value="' + i + '">第 ' + i + " 周</option>";
+				sel.innerHTML = opts;
+				sel.addEventListener("change", function () { setWeek(+sel.value); });
+			}
+			var pv = document.getElementById("tt-prev");
+			var nx = document.getElementById("tt-next");
+			var nw = document.getElementById("tt-today");
+			if (pv) pv.addEventListener("click", function () { setWeek(week - 1); });
+			if (nx) nx.addEventListener("click", function () { setWeek(week + 1); });
+			if (nw) nw.addEventListener("click", function () { setWeek(realWeek); });
+			renderPeriods();
+			setWeek(realWeek >= 1 ? realWeek : 1);
+			var meta = document.getElementById("tt-meta");
+			if (meta) {
+				meta.textContent = d.meta.className + " · " + d.meta.campus + " · " + d.meta.term +
+					" · 数据更新 " + d.meta.updated;
+			}
+		})
+		.catch(function () {
+			var g = document.getElementById("tt-grid");
+			if (g) g.innerHTML = '<p class="tt-err">课表数据加载失败，请稍后重试。</p>';
+		});
+})();
