@@ -10,6 +10,7 @@
 	var CUSTOM_SLOTS = {};
 	var week = 1;
 	var realWeek = 1;
+	var selId = null;
 	var today = new Date();
 
 	function slotInfo(key) {
@@ -78,6 +79,7 @@
 			entries.push({
 				id: c.id, day: c.day, slot: c.slot, name: c.name,
 				short: c.short || c.name, room: c.room || "", teacher: c.teacher || "",
+				weeks: c.weeks || "",
 				active: parseWeeks(c.weeks).indexOf(w) >= 0, cancelled: false,
 				temp: false, changes: []
 			});
@@ -96,6 +98,7 @@
 					id: ov.id || "tmp" + entries.length, day: ov.day, slot: ov.slot,
 					name: ov.name || "", short: ov.short || ov.name || "", room: ov.room || "",
 					teacher: ov.teacher || "", time: ov.time || "",
+					weeks: Array.isArray(ov.weeks) ? ov.weeks.join(",") : String(ov.weeks || ""),
 					active: true, cancelled: false, temp: true,
 					changes: [{ t: "add", note: ov.note || "" }]
 				});
@@ -113,15 +116,20 @@
 			}
 			var e = byId[ov.id];
 			if (!e) return;
-			if (t === "cancel") { e.active = false; e.cancelled = true; e.changes.push({ t: "cancel", note: ov.note || "" }); }
-			else if (t === "room") { e.room = ov.room || e.room; e.changes.push({ t: "room", note: ov.note || "" }); }
-			else if (t === "move") {
-				if (ov.day) e.day = ov.day;
-				if (ov.slot) e.slot = ov.slot;
-				if (ov.room) e.room = ov.room;
-				e.active = true;
-				e.changes.push({ t: "move", note: ov.note || "" });
-			}
+		if (t === "cancel") { e.active = false; e.cancelled = true; e.changes.push({ t: "cancel", note: ov.note || "" }); }
+		else if (t === "room") {
+			var oldRoom = e.room;
+			e.room = ov.room || e.room;
+			e.changes.push({ t: "room", note: ov.note || "", old: oldRoom });
+		}
+		else if (t === "move") {
+			var oldPos = { day: e.day, slot: e.slot, room: e.room };
+			if (ov.day) e.day = ov.day;
+			if (ov.slot) e.slot = ov.slot;
+			if (ov.room) e.room = ov.room;
+			e.active = true;
+			e.changes.push({ t: "move", note: ov.note || "", old: oldPos });
+		}
 		});
 		return { entries: entries, notes: notes };
 	}
@@ -139,6 +147,42 @@
 			return s2;
 		}
 		return s + " 有调整";
+	}
+
+	function detailHtml(e) {
+		var st = slotInfo(e.slot);
+		var wk = parseWeeks(e.weeks);
+		var oldRoom = "", oldPos = null;
+		e.changes.forEach(function (c) {
+			if (c.t === "room") oldRoom = c.old || "";
+			if (c.t === "move" && c.old) { oldPos = c.old; oldRoom = c.old.room || oldRoom; }
+		});
+		var state = e.cancelled ? "本周停课" : e.active ? (e.temp ? "临时安排" : "本周有课") : "本周不上";
+		var timeTxt = SLOTS.indexOf(e.slot) < 0
+			? (st.time || e.slot)
+			: (st.label || e.slot) + " " + (st.time || "");
+		var rows = [
+			["任课教师", esc(e.teacher || "—")],
+			["上课地点", esc(e.room || "—") +
+				(oldRoom && oldRoom !== e.room ? '<i class="tt-old">原 ' + esc(oldRoom) + "</i>" : "")],
+			["上课时间", DAYS[e.day - 1] + " " + timeTxt],
+			["上课周次", e.weeks ? "第 " + esc(String(e.weeks)).replace(/,/g, "、") + " 周" : "—"],
+			["本学期周数", wk.length ? "共 " + wk.length + " 周" : "—"],
+			["本周状态", state]
+		];
+		if (oldPos && (oldPos.day !== e.day || oldPos.slot !== e.slot)) {
+			rows.splice(3, 0, ["原时间", DAYS[oldPos.day - 1] + " " +
+				(slotInfo(oldPos.slot).label || oldPos.slot)]);
+		}
+		var notes = e.changes.map(function (c) {
+			return esc(changeText(e, c) + (c.note ? "：" + c.note : ""));
+		});
+		return '<div class="tt-dtop"><span class="tt-dname">' + esc(e.name || e.short) +
+			'</span><button type="button" class="tt-dclose" data-close="1" aria-label="关闭详情">×</button></div>' +
+			'<div class="tt-dbody">' + rows.map(function (r) {
+				return "<div><b>" + r[0] + "</b><span>" + r[1] + "</span></div>";
+			}).join("") + "</div>" +
+			(notes.length ? '<div class="tt-dnote">' + notes.join("<br>") + "</div>" : "");
 	}
 
 	function render() {
@@ -192,7 +236,10 @@
 				var tip = cell.name + (cell.teacher ? " · " + cell.teacher : "") +
 					(cell.room ? " · " + cell.room : "") + " · " + DAYS[d - 1] + " " + (st.label || sk) + " " + (st.time || "");
 				html += '<div class="' + cls + (isNow && d === todayIdx ? " is-today" : "") +
-					'" title="' + esc(tip) + '"><b>' + esc(cell.short) + "</b>" +
+					(cell.id === selId ? " is-sel" : "") +
+					'" data-id="' + esc(cell.id) + '" tabindex="0" role="button"' +
+					' aria-label="' + esc(cell.name + " 详情") + '" title="' + esc(tip) + '"><b>' +
+					esc(cell.short) + "</b>" +
 					(cell.room ? "<span>" + esc(cell.room) + "</span>" : "") + flag + "</div>";
 			}
 			html += "</div>";
@@ -240,6 +287,22 @@
 					(st.label || e.slot) + " " + (st.time || "") + "</span><span>" + esc(e.room) + "</span></li>";
 			}).join("");
 		}
+
+		var dbox = document.getElementById("tt-detail");
+		if (dbox) {
+			var cur = null;
+			if (selId) {
+				res.entries.forEach(function (e) { if (e.id === selId) cur = e; });
+			}
+			if (!cur) {
+				selId = null;
+				dbox.className = "tt-detail is-empty";
+				dbox.innerHTML = "";
+			} else {
+				dbox.className = "tt-detail";
+				dbox.innerHTML = detailHtml(cur);
+			}
+		}
 	}
 
 	function renderPeriods() {
@@ -280,6 +343,30 @@
 			if (pv) pv.addEventListener("click", function () { setWeek(week - 1); });
 			if (nx) nx.addEventListener("click", function () { setWeek(week + 1); });
 			if (nw) nw.addEventListener("click", function () { setWeek(realWeek); });
+			var gridEl = document.getElementById("tt-grid");
+			if (gridEl) {
+				var pick = function (ev) {
+					var t = ev.target;
+					var cell = t && t.closest ? t.closest(".tt-cell") : null;
+					if (!cell) return;
+					var id = cell.getAttribute("data-id");
+					if (!id) return;
+					selId = id === selId ? null : id;
+					render();
+				};
+				gridEl.addEventListener("click", pick);
+				gridEl.addEventListener("keydown", function (ev) {
+					if (ev.key !== "Enter" && ev.key !== " ") return;
+					ev.preventDefault();
+					pick(ev);
+				});
+			}
+			var dboxEl = document.getElementById("tt-detail");
+			if (dboxEl) {
+				dboxEl.addEventListener("click", function (ev) {
+					if (ev.target && ev.target.getAttribute("data-close")) { selId = null; render(); }
+				});
+			}
 			renderPeriods();
 			setWeek(realWeek >= 1 ? realWeek : 1);
 			var meta = document.getElementById("tt-meta");

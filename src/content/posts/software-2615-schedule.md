@@ -14,7 +14,7 @@ comment: true
 
 这是软件2615 的课表，按**周次**而不是按"固定星期"来看——因为很多课只在特定周次开（比如心理健康只在第 12、15 周上，形势与政策只在第 16-17 周上），光看一张静态周历很容易搞错。
 
-打开页面会自动定位到**本周**，也可以左右翻周或直接下拉选任意一周。灰色的格子是这一周不上的课，带角标的是有调整的课程。
+打开页面会自动定位到**本周**，也可以左右翻周或直接下拉选任意一周。灰色的格子是这一周不上的课，带角标的是有调整的课程。**点任意一格**，下面会展开这门课的详情：任课教师、教室、节次时间、上哪些周、本学期一共几周，以及这次调整改了什么（换教室会同时标出原教室）。再点一次或按 × 收起。
 
 <div class="tt-root">
 <style>
@@ -71,6 +71,21 @@ html.dark .tt-root{--tt-panel:#181c1f;--tt-panel2:#20262a;--tt-line:rgba(255,255
 .tt-periods li{background:var(--tt-panel2);border-radius:8px;padding:6px 9px;font-size:12px;display:flex;justify-content:space-between;gap:6px}
 .tt-periods span{color:var(--tt-tx2);font-size:11px}
 .tt-err{font-size:12px;color:var(--tt-cx-tx)}
+.tt-cell[data-id]{cursor:pointer}
+.tt-cell.is-sel{outline:2px solid var(--tt-today-bd);outline-offset:-2px}
+.tt-cell[data-id]:focus-visible{outline:2px solid var(--tt-today-bd);outline-offset:-2px}
+.tt-detail{margin-top:12px;border:1px solid var(--tt-line);border-radius:10px;background:var(--tt-panel2);overflow:hidden}
+.tt-detail.is-empty{display:none}
+.tt-dtop{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 12px;border-bottom:1px solid var(--tt-line)}
+.tt-dname{font-size:13px;font-weight:500}
+.tt-dclose{border:none;background:transparent;color:var(--tt-tx2);font-size:16px;line-height:1;cursor:pointer;padding:2px 6px;border-radius:6px}
+.tt-dclose:hover{background:var(--tt-line)}
+.tt-dbody{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;padding:10px 12px}
+.tt-dbody>div{display:flex;flex-direction:column;gap:2px}
+.tt-dbody b{font-size:11px;font-weight:400;color:var(--tt-tx2)}
+.tt-dbody span{font-size:12px}
+.tt-old{font-style:normal;font-size:11px;opacity:.7;margin-left:4px}
+.tt-dnote{padding:0 12px 10px;font-size:12px;color:var(--tt-tx2);line-height:1.6}
 @media(max-width:640px){.tt-list{display:block}.tt-panel{padding:12px}}
 </style>
 <div class="tt-panel">
@@ -84,6 +99,7 @@ html.dark .tt-root{--tt-panel:#181c1f;--tt-panel2:#20262a;--tt-line:rgba(255,255
 </div>
 <div id="tt-changes" class="tt-changes is-empty"></div>
 <div id="tt-grid" class="tt-grid"></div>
+<div id="tt-detail" class="tt-detail is-empty"></div>
 <ul id="tt-list" class="tt-list"></ul>
 <div class="tt-legend"><span><i style="background:var(--tt-on-bg);border:1px solid var(--tt-on-bd)"></i>本周有课</span><span><i style="background:var(--tt-off-bg)"></i>本周不上</span><span><i style="background:var(--tt-f-room-bg)"></i>改地点</span><span><i style="background:var(--tt-f-mv-bg)"></i>调课 / 对调</span><span><i style="background:var(--tt-f-cx-bg)"></i>停课</span><span><i style="background:var(--tt-add-bg);border:1px solid var(--tt-add-bd)"></i>临时新增</span></div>
 <div class="tt-foot"><span id="tt-meta"></span></div>
