@@ -165,7 +165,8 @@
 			["任课教师", esc(e.teacher || "—")],
 			["上课地点", esc(e.room || "—") +
 				(oldRoom && oldRoom !== e.room ? '<i class="tt-old">原 ' + esc(oldRoom) + "</i>" : "")],
-			["上课时间", DAYS[e.day - 1] + " " + timeTxt],
+			["上课时间", DAYS[e.day - 1] + " " + timeTxt +
+				(slotInfo(e.slot).note ? '<i class="tt-old">' + esc(slotInfo(e.slot).note) + "</i>" : "")],
 			["上课周次", e.weeks ? "第 " + esc(String(e.weeks)).replace(/,/g, "、") + " 周" : "—"],
 			["本学期周数", wk.length ? "共 " + wk.length + " 周" : "—"],
 			["本周状态", state]
@@ -309,8 +310,9 @@
 		var box = document.getElementById("tt-periods");
 		if (!box) return;
 		box.innerHTML = (DATA.meta.periods || []).map(function (p) {
-			return "<li><b>" + esc(p.name) + "</b><span>" +
-				(p.start ? p.start + "–" + p.end : "—") + "</span></li>";
+			var t = p.start ? p.start + "–" + p.end : "";
+			return "<li" + (t ? "" : " class=\"tt-per-empty\"") + "><b>" + esc(p.name) + "</b><span>" +
+				(t || "空白") + "</span></li>";
 		}).join("");
 	}
 

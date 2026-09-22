@@ -70,6 +70,7 @@ html.dark .tt-root{--tt-panel:#181c1f;--tt-panel2:#20262a;--tt-line:rgba(255,255
 .tt-periods{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:6px;list-style:none;margin:8px 0 0;padding:0}
 .tt-periods li{background:var(--tt-panel2);border-radius:8px;padding:6px 9px;font-size:12px;display:flex;justify-content:space-between;gap:6px}
 .tt-periods span{color:var(--tt-tx2);font-size:11px}
+.tt-periods li.tt-per-empty{background:transparent;border:1px dashed var(--tt-line);opacity:.7}
 .tt-err{font-size:12px;color:var(--tt-cx-tx)}
 .tt-cell[data-id]{cursor:pointer}
 .tt-cell.is-sel{outline:2px solid var(--tt-today-bd);outline-offset:-2px}
@@ -108,4 +109,4 @@ html.dark .tt-root{--tt-panel:#181c1f;--tt-panel2:#20262a;--tt-line:rgba(255,255
 <script src="/assets/js/timetable-2615.js"></script>
 </div>
 
-课表数据来自教务系统的班级课程表，节次时间以学院《关于公布各校区作息时间的通知》为准。第 13-14 周是军事技能整周实践，不按这张周课表上课。
+课表数据来自教务系统的班级课程表，节次时间以学院《关于公布各校区作息时间的通知》为准。北校区作息表一天排到第十一节，其中**第八节、第十一节是空白**（不排课）；教务课表上写的「第七八节」实际就是第七节这一大节，16:05–17:25 连上，中间没有第八节。第 13-14 周是军事技能整周实践，不按这张周课表上课。
