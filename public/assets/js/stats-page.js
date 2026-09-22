@@ -16,7 +16,6 @@
  *   #stats-trend                         趋势图容器
  *   #stats-rank > [data-rank-id][data-published]  排行行（标题/链接/日期由服务端渲染）
  *   #stats-status                        状态/进度文字
- *   #stats-refresh                       刷新按钮
  *   #stats-rank-toggle                   展开/收起排行
  */
 (function () {
@@ -134,7 +133,8 @@
 				var val = typeof values[j] === "number" ? values[j] : 0;
 				var pct = Math.max(2, Math.round((val / max) * 100));
 				var isToday = series.dates[j] === S.today();
-				var label = shortDate(series.dates[j]);
+				// 「今天」用文字点出来（刻度写成「今天」+ 主题色加粗），而不是换柱子颜色
+				var label = isToday ? "今天" : shortDate(series.dates[j]);
 				// 末尾一定标注；离末尾太近的常规刻度跳过，避免文字挤在一起
 				var showLabel =
 					j === lastIndex || (lastIndex - j >= 2 && j % labelStep === 0);
@@ -144,7 +144,13 @@
 						(isToday ? " is-today" : "") +
 						(val > 0 ? "" : " is-zero") +
 						'" title="' +
-						escapeHtml(label + "　" + val + " 次浏览") +
+						escapeHtml(
+							(isToday ? "今天 " : "") +
+								shortDate(series.dates[j]) +
+								"　" +
+								val +
+								" 次浏览"
+						) +
 						'">' +
 						(val > 0 ? '<div class="sp-bar" style="height:' + pct + '%"></div>' : "") +
 						(showLabel
@@ -159,7 +165,7 @@
 			if (firstDay && firstDay !== series.dates[0]) {
 				notes.push("数据从 " + escapeHtml(shortDate(firstDay)) + " 开始记录");
 			}
-			if (todayValue > 0) notes.push("灰柱为今天（仍在增长）");
+			if (todayValue > 0) notes.push("「今天」的数据仍在增长");
 
 			html.push('<p class="sp-chart-foot">' + notes.join(" · ") + "</p>");
 
@@ -263,7 +269,7 @@
 	/* 主流程                                                               */
 	/* ------------------------------------------------------------------ */
 
-	function load(force) {
+	function load() {
 		var root = el("stats-root");
 		if (!root) return Promise.resolve();
 
@@ -280,7 +286,6 @@
 		busy = true;
 
 		status("正在读取数据 …");
-		if (force && typeof S.clearCache === "function") S.clearCache();
 
 		// 先等本次访问的计数完成，概览数字才是「含本次访问」的最新值
 		return Promise.resolve(S.ready)
@@ -304,13 +309,6 @@
 		if (!root || root.getAttribute("data-bound") === "1") return;
 		root.setAttribute("data-bound", "1");
 
-		var refresh = el("stats-refresh");
-		if (refresh) {
-			refresh.addEventListener("click", function () {
-				load(true);
-			});
-		}
-
 		var toggle = el("stats-rank-toggle");
 		if (toggle) {
 			toggle.addEventListener("click", function () {
@@ -330,7 +328,7 @@
 			});
 		}
 
-		load(false);
+		load();
 	}
 
 	function start() {

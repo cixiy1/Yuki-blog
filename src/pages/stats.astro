@@ -26,14 +26,9 @@ const posts = enabled ? await getStatsPostList() : [];
         ) : (
           <>
             <div class="sp-head">
-              <div>
-                {/* 大屏由 banner 统一显示页面标题，这里只在窄屏补一个 */}
-                <h1 class="sp-title lg:hidden">{pageCfg.title}</h1>
-                <p class="sp-desc">{pageCfg.description}</p>
-              </div>
-              <button id="stats-refresh" class="sp-btn" type="button">
-                刷新数据
-              </button>
+              {/* 大屏由 banner 统一显示页面标题，这里只在窄屏补一个 */}
+              <h1 class="sp-title lg:hidden">{pageCfg.title}</h1>
+              <p class="sp-desc">{pageCfg.description}</p>
             </div>
 
             {/* 概览 */}
@@ -151,10 +146,6 @@ const posts = enabled ? await getStatsPostList() : [];
      排行行由 Astro 服务端渲染（好让无 JS 时也能看到文章清单），
      但柱状图是 stats-page.js 运行时插入的，所以这里统一用全局样式。 */
   .sp-head {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 1rem;
     margin-bottom: 1.5rem;
   }
 
@@ -175,7 +166,6 @@ const posts = enabled ? await getStatsPostList() : [];
     flex: 0 0 auto;
     padding: 0.35rem 0.85rem;
     font-size: 0.8rem;
-    color: inherit;
     background: transparent;
     border: 1px solid var(--line-divider);
     border-radius: 0.6rem;
@@ -208,7 +198,8 @@ const posts = enabled ? await getStatsPostList() : [];
   .sp-card-value,
   .sp-section-title,
   .sp-rank-title,
-  .sp-rank-num {
+  .sp-rank-num,
+  .sp-btn {
     color: rgb(0 0 0 / 0.9);
   }
 
@@ -216,7 +207,8 @@ const posts = enabled ? await getStatsPostList() : [];
   :root.dark .sp-card-value,
   :root.dark .sp-section-title,
   :root.dark .sp-rank-title,
-  :root.dark .sp-rank-num {
+  :root.dark .sp-rank-num,
+  :root.dark .sp-btn {
     color: rgb(255 255 255 / 0.9);
   }
 
@@ -305,22 +297,20 @@ const posts = enabled ? await getStatsPostList() : [];
     justify-content: center;
   }
 
+  /* 柱子一律用主题强调色 --primary —— 和主题自己的 bg-(--primary) 徽章是同一个值，
+     不做透明弱化、更不要给「今天」换成灰色（--content-meta）之类的中性色，
+     否则图表里会冒出一块不属于主题色的色块。
+     「今天」用刻度文字（主题色 + 加粗）区分，而不是换颜色。 */
   .sp-bar {
     width: 100%;
     min-height: 2px;
     border-radius: 4px 4px 2px 2px;
     background: var(--primary);
-    opacity: 0.7;
     animation: sp-grow 0.5s ease both;
   }
 
   .sp-bar-wrap:hover .sp-bar {
-    opacity: 1;
-  }
-
-  .sp-bar-wrap.is-today .sp-bar {
-    background: var(--content-meta);
-    opacity: 0.5;
+    filter: brightness(1.1);
   }
 
   .sp-bar-label {
@@ -329,6 +319,11 @@ const posts = enabled ? await getStatsPostList() : [];
     font-size: 0.65rem;
     color: var(--content-meta);
     white-space: nowrap;
+  }
+
+  .sp-bar-wrap.is-today .sp-bar-label {
+    color: var(--primary);
+    font-weight: 600;
   }
 
   .sp-chart-foot {
@@ -415,8 +410,9 @@ const posts = enabled ? await getStatsPostList() : [];
     color: var(--content-meta);
   }
 
+  /* 报错色也取主题里已经定义好的告警色，不引入自成一派的红 */
   .sp-status[data-kind="error"] {
-    color: #dc2626;
+    color: var(--admonitions-color-caution);
   }
 
   .sp-note {
