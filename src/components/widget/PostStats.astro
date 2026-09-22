@@ -1,0 +1,165 @@
+---
+/**
+ * 「本文统计」侧栏组件
+ *
+ * 与「站点信息」并列放在文章详情页的侧栏里，显示**当前这篇文章**的数据。
+ *
+ * 为什么用 URL 反查当前文章，而不是让上层传 props：
+ *   SideBar.astro 是通用渲染器，只有 sidebarToc 有专门的 props 通道，
+ *   为它新开一条通道要动布局层（MainGridLayout / [...slug].astro 一路传下来）。
+ *   而文章详情页的地址一定是 /posts/<slug>/，用 getPostUrlBySlug 逐个比对即可在构建期命中，
+ *   命中不到就整块不渲染——非文章页天然不会显示。
+ *
+ * 阅读量由 /assets/js/site-stats.js 在客户端填（复用 [data-post-stats] 约定），
+ * 计数服务取不到时该行保持隐藏，不会留占位符。
+ */
+import { render } from "astro:content";
+import { Icon } from "astro-icon/components";
+import WidgetLayout from "@/components/common/WidgetLayout.astro";
+import { statsConfig } from "@/config";
+import type { WidgetComponentConfig } from "@/types/config";
+import { getSortedPosts } from "@/utils/content-utils";
+import { formatDateToYYYYMMDD } from "@/utils/date-utils";
+import { getStatsId } from "@/utils/stats-utils";
+import { getPostUrlBySlug, removeFileExtension } from "@/utils/url-utils";
+
+interface Props {
+	class?: string;
+	style?: string;
+	widgetConfig?: WidgetComponentConfig;
+}
+
+const { class: className, style, widgetConfig } = Astro.props;
+const showTitle = widgetConfig?.showTitle !== false;
+
+// 两边都要归一化再比：
+//   · 尾斜杠——文章页是目录式路由（/posts/x/），但 Astro.url 在不同构建配置下可能不带
+//   · 百分号编码——中文 slug（如「小施施七夕快乐」）在 Astro.url 里是 %E5%B0%8F… 形式，
+//     而 getPostUrlBySlug 返回的是原文
+const normalizePath = (value: string) => {
+	let decoded = String(value || "");
+	try {
+		decoded = decodeURIComponent(decoded);
+	} catch {
+		// 非法百分号编码就按原样比
+	}
+	return decoded.length > 1 ? decoded.replace(/\/+$/, "") : decoded;
+};
+
+const found = statsConfig.enable
+	? (await getSortedPosts()).find(
+			(entry) =>
+				normalizePath(getPostUrlBySlug(removeFileExtension(entry.id))) ===
+				normalizePath(Astro.url.pathname),
+		)
+	: undefined;
+
+// 加密文章不展示：解锁前连字数和时长都不该露出
+const current = found && !found.data.password ? found : undefined;
+
+// 字数和阅读时长直接取渲染后的 frontmatter，保证与正文顶部那行完全一致
+let words = 0;
+let minutes = 0;
+if (current) {
+	try {
+		const { remarkPluginFrontmatter } = await render(current);
+		words = Number(remarkPluginFrontmatter?.words) || 0;
+		minutes = Number(remarkPluginFrontmatter?.minutes) || 0;
+	} catch {
+		// 取不到就不显示这两行
+	}
+}
+
+const category = current?.data.category || "";
+const published = current ? formatDateToYYYYMMDD(current.data.published) : "";
+const updated = current?.data.updated
+	? formatDateToYYYYMMDD(current.data.updated)
+	: "";
+
+const rows: { icon: string; label: string; value: string }[] = [];
+
+if (words) {
+	rows.push({ icon: "material-symbols:notes", label: "字数", value: `${words} 字` });
+}
+if (minutes) {
+	rows.push({
+		icon: "material-symbols:schedule",
+		label: "阅读时长",
+		value: `约 ${minutes} 分钟`,
+	});
+}
+if (published) {
+	rows.push({
+		icon: "material-symbols:calendar-month",
+		label: "发布于",
+		value: published,
+	});
+}
+if (updated && updated !== published) {
+	rows.push({ icon: "material-symbols:update", label: "更新于", value: updated });
+}
+if (category) {
+	rows.push({
+		icon: "material-symbols:folder-open",
+		label: "分类",
+		value: category,
+	});
+}
+
+const statsId = current ? getStatsId(removeFileExtension(current.id)) : "";
+---
+
+{
+	current && (
+		<WidgetLayout
+			name="本文统计"
+			showTitle={showTitle}
+			id="post-stats"
+			class={className}
+			style={style}
+		>
+			<div class="flex flex-col gap-2">
+				{/* 阅读量：数字由 site-stats.js 填，取不到就一直隐藏 */}
+				<div
+					class="flex items-center justify-between px-3 py-2 rounded-lg bg-neutral-100/60 dark:bg-neutral-800/50"
+					style="display:none"
+					data-post-stats
+					data-stats-id={statsId}
+					title="本文阅读量"
+				>
+					<div class="flex items-center gap-2.5">
+						<div class="text-(--primary) text-lg">
+							<Icon is:inline name="material-symbols:visibility" />
+						</div>
+						<span class="text-neutral-700 dark:text-neutral-300 font-medium text-sm">
+							阅读量
+						</span>
+					</div>
+					<span class="text-xs font-bold text-neutral-900 dark:text-neutral-100 text-right">
+						<span data-post-stats-value>—</span>
+						<span class="ml-0.5">次</span>
+					</span>
+				</div>
+
+				{rows.map((row) => (
+					<div class="flex items-center justify-between px-3 py-2 rounded-lg bg-neutral-100/60 dark:bg-neutral-800/50">
+						<div class="flex items-center gap-2.5">
+							<div class="text-(--primary) text-lg">
+								<Icon is:inline name={row.icon} />
+							</div>
+							<span class="text-neutral-700 dark:text-neutral-300 font-medium text-sm">
+								{row.label}
+							</span>
+						</div>
+						<span
+							class="text-xs font-bold text-neutral-900 dark:text-neutral-100 text-right max-w-[55%] truncate"
+							title={row.value}
+						>
+							{row.value}
+						</span>
+					</div>
+				))}
+			</div>
+		</WidgetLayout>
+	)
+}

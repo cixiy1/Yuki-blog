@@ -147,6 +147,18 @@ export const sidebarLayoutConfig: SidebarLayoutConfig = {
 			},
 		},
 		{
+			// 组件类型：本文统计组件
+			// 显示「当前这篇文章」的数据（阅读量/字数/时长/发布更新/分类），
+			// 和上面的「站点信息」并列。非文章页、加密文章会自动不渲染。
+			type: "postStats",
+			// 是否启用该组件
+			enable: true,
+			// 组件位置
+			position: "top",
+			// 是否在文章详情页显示
+			showOnPostPage: true,
+		},
+		{
 			// 组件类型：日历组件
 			type: "calendar",
 			// 是否启用该组件

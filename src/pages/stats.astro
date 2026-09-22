@@ -199,6 +199,27 @@ const posts = enabled ? await getStatsPostList() : [];
     margin-top: 0.75rem;
   }
 
+  /* ⚠️ 不要依赖「继承」拿文字颜色。
+     主题只在它自己的组件里用 text-black/90 dark:text-white/90 这类工具类显式上色，
+     body 上并没有一个会在深色模式翻白的默认字色。自定义样式如果不上色，
+     深色模式下就会拿到 rgb(0,0,0) ——黑字压在深色卡片上直接看不见。
+     下面这组选择器覆盖所有「非 .sp-* 已显式上色」的正文元素。 */
+  .sp-title,
+  .sp-card-value,
+  .sp-section-title,
+  .sp-rank-title,
+  .sp-rank-num {
+    color: rgb(0 0 0 / 0.9);
+  }
+
+  :root.dark .sp-title,
+  :root.dark .sp-card-value,
+  :root.dark .sp-section-title,
+  :root.dark .sp-rank-title,
+  :root.dark .sp-rank-num {
+    color: rgb(255 255 255 / 0.9);
+  }
+
   /* 概览卡片 */
   .sp-cards {
     display: grid;
