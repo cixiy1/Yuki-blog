@@ -19,6 +19,7 @@ import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import CoverImage from "@/components/common/CoverImage.astro";
 import PostMetadata from "@/components/layout/PostMeta.astro";
+import PostStats from "@/components/misc/PostStats.astro";
 import RecommendedPost from "@/components/misc/RecommendedPost.astro";
 import SharePoster from "@/components/misc/SharePoster.svelte";
 import { coverImageConfig } from "@/config/coverImageConfig";
@@ -28,6 +29,7 @@ import { siteConfig } from "@/config/siteConfig";
 import { sponsorConfig } from "@/config/sponsorConfig";
 import { formatDateToYYYYMMDD } from "@/utils/date-utils";
 import { getApiUrlList, processCoverImageSync } from "@/utils/image-utils";
+import { getStatsId } from "@/utils/stats-utils";
 import { url } from "@/utils/url-utils";
 
 export async function getStaticPaths() {
@@ -46,6 +48,9 @@ const { entry } = Astro.props;
 const { Content, headings } = await render(entry);
 
 const { remarkPluginFrontmatter } = await render(entry);
+
+// 站内阅读量的计数 id（由 slug 哈希而来，见 src/utils/stats-utils.ts）
+const statsId = getStatsId(removeFileExtension(entry.id));
 
 const bannerPostMeta = {
 	title: entry.data.title,
@@ -170,6 +175,7 @@ const relatedPosts = await getRelatedPosts(entry, 5);
                   <span>{i18n(I18nKey.postEncrypted)}</span>
                 </div>
               )}
+              <PostStats id={statsId} variant="cover" />
             </div>
             <div class="absolute inset-x-0 bottom-0 px-6 md:px-9 pt-10 pb-3 bg-gradient-to-t from-black/80 via-black/45 to-transparent">
               <div
@@ -241,6 +247,7 @@ const relatedPosts = await getRelatedPosts(entry, 5);
                 </div>
               </div>
             )}
+            <PostStats id={statsId} />
           </div>
         )
       }

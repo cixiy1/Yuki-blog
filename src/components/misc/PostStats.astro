@@ -1,0 +1,68 @@
+---
+import { statsConfig } from "@/config";
+
+// 文章阅读量徽章
+// 数值由 /assets/js/site-stats.js 在客户端填入；取不到数据时保持隐藏，不会留下占位符。
+// variant:
+//   default —— 正文顶部「字数 / 阅读时长」那一行（浅色文字 + 方块背景图标）
+//   cover   —— 封面图上的工具条（白色小字）
+interface Props {
+	id: string;
+	variant?: "default" | "cover";
+	label?: string;
+	class?: string;
+}
+
+const { id, variant = "default", label = "阅读", class: className = "" } = Astro.props;
+
+const enabled = statsConfig.enable && statsConfig.showPostView;
+const isCover = variant === "cover";
+
+const eyePath =
+	"M12 4.5C7.03 4.5 2.79 7.61 1 12c1.79 4.39 6.03 7.5 11 7.5s9.21-3.11 11-7.5c-1.79-4.39-6.03-7.5-11-7.5Zm0 12.5a5 5 0 1 1 0-10 5 5 0 0 1 0 10Zm0-2.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z";
+---
+
+{
+	enabled && (
+		<div
+			class:list={[
+				isCover ? "flex items-center gap-1 whitespace-nowrap" : "flex flex-row items-center",
+				className,
+			]}
+			style="display:none"
+			data-post-stats
+			data-stats-id={id}
+			data-stats-variant={variant}
+			title={`本页${label}量`}
+		>
+			{isCover ? (
+				<svg
+					viewBox="0 0 24 24"
+					width="16"
+					height="16"
+					fill="currentColor"
+					aria-hidden="true"
+					style="display:block"
+				>
+					<path d={eyePath} />
+				</svg>
+			) : (
+				<div class="transition h-6 w-6 rounded-md bg-black/5 dark:bg-white/10 text-black/50 dark:text-white/50 flex items-center justify-center mr-2">
+					<svg
+						viewBox="0 0 24 24"
+						width="16"
+						height="16"
+						fill="currentColor"
+						aria-hidden="true"
+						style="display:block"
+					>
+						<path d={eyePath} />
+					</svg>
+				</div>
+			)}
+			<div class={isCover ? "" : "text-sm"}>
+				<span data-post-stats-value>0</span><span class="ml-1">{label}</span>
+			</div>
+		</div>
+	)
+}

@@ -4,6 +4,7 @@ import {
 	type NavBarSearchConfig,
 	NavBarSearchMethod,
 } from "../types/navBarConfig";
+import { statsConfig } from "./statsConfig";
 
 // ============================================================================
 // 导航栏配置 - 根据顺序动态生成导航栏链接
@@ -63,6 +64,11 @@ const getDynamicNavBarConfig = (): NavBarConfig => {
 			LinkPresets.Booknav,
 		],
 	});
+
+	// 数据统计（站内统计关闭时不显示入口）
+	if (statsConfig.enable && statsConfig.page.enable) {
+		links.push(LinkPresets.Stats);
+	}
 
 	// 关于及其子菜单
 	links.push({
@@ -171,6 +177,11 @@ export const LinkPresets: Record<string, NavBarLink> = {
 		url: "/booknav/",
 		icon: "material-symbols:bookmarks",
 		pageKey: "booknav",
+	},
+	Stats: {
+		name: "统计",
+		url: "/stats/",
+		icon: "material-symbols:bar-chart",
 	},
 };
 

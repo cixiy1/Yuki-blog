@@ -17,6 +17,7 @@ import {
 	expressiveCodeConfig,
 	profileConfig,
 	siteConfig,
+	statsConfig,
 } from "@/config";
 import {
 	BANNER_HEIGHT,
@@ -99,6 +100,19 @@ if (!lang) {
 const siteLang = lang.replace("_", "-");
 
 // 使用固定的banner偏移量，position配置用于图片定位
+
+// 站内访问统计（阅读量 / 数据统计页）运行时配置，注入给 /assets/js/site-stats.js
+const statsRuntimeConfig = {
+	enable: statsConfig.enable,
+	apiBase: statsConfig.apiBase,
+	namespace: statsConfig.namespace,
+	requestIntervalMs: statsConfig.requestIntervalMs,
+	dedupeMinutes: statsConfig.dedupeMinutes,
+	leaderboardCacheTtlMs: statsConfig.leaderboardCacheTtlMs,
+	excludePaths: statsConfig.excludePaths,
+	debug: statsConfig.debug,
+};
+const statsScriptBase = url("/assets/js/");
 ---
 
 <!doctype html>
@@ -133,6 +147,31 @@ const siteLang = lang.replace("_", "-");
             hashMode={analyticsConfig.la51Analytics?.hashMode}
             screenRecord={analyticsConfig.la51Analytics?.screenRecord}
             />
+    )}
+
+    {/* 站内访问统计：阅读量计数 + /stats 数据统计页（与上面的第三方分析互不影响） */}
+    {statsConfig?.enable && (
+      <>
+        <script
+          is:inline
+          data-swup-ignore-script
+          set:html={`window.__YUKI_STATS__ = ${JSON.stringify(statsRuntimeConfig)};`}
+        />
+        <script
+          is:inline
+          data-swup-ignore-script
+          defer
+          src={`${statsScriptBase}site-stats.js`}
+        />
+        {statsConfig.page?.enable && (
+          <script
+            is:inline
+            data-swup-ignore-script
+            defer
+            src={`${statsScriptBase}stats-page.js`}
+          />
+        )}
+      </>
     )}
 
     <title>{pageTitle}</title>
