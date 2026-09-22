@@ -106,10 +106,14 @@
 			var max = 0;
 			var sum = 0;
 			var counted = 0;
+			var firstDay = null; // 有记录的第一天（用于说明「数据从哪开始」）
+			var todayValue = 0;
 
 			for (var i = 0; i < values.length; i++) {
 				var v = typeof values[i] === "number" ? values[i] : 0;
 				if (v > max) max = v;
+				if (v > 0 && !firstDay) firstDay = series.dates[i];
+				if (series.dates[i] === S.today()) todayValue = v;
 				sum += v;
 				counted++;
 			}
@@ -128,21 +132,21 @@
 			html.push('<div class="sp-chart">');
 			for (var j = 0; j < values.length; j++) {
 				var val = typeof values[j] === "number" ? values[j] : 0;
-				var pct = max ? Math.max(2, Math.round((val / max) * 100)) : 2;
+				var pct = Math.max(2, Math.round((val / max) * 100));
 				var isToday = series.dates[j] === S.today();
 				var label = shortDate(series.dates[j]);
 				// 末尾一定标注；离末尾太近的常规刻度跳过，避免文字挤在一起
 				var showLabel =
 					j === lastIndex || (lastIndex - j >= 2 && j % labelStep === 0);
+				// 0 的那天不画柱子：刚上线时历史全是 0，画出来会像一条虚线被当成数据
 				html.push(
 					'<div class="sp-bar-wrap' +
 						(isToday ? " is-today" : "") +
+						(val > 0 ? "" : " is-zero") +
 						'" title="' +
 						escapeHtml(label + "　" + val + " 次浏览") +
 						'">' +
-						'<div class="sp-bar" style="height:' +
-						pct +
-						'%"></div>' +
+						(val > 0 ? '<div class="sp-bar" style="height:' + pct + '%"></div>' : "") +
 						(showLabel
 							? '<span class="sp-bar-label">' + escapeHtml(label) + "</span>"
 							: "") +
@@ -150,13 +154,14 @@
 				);
 			}
 			html.push("</div>");
-			html.push(
-				'<p class="sp-chart-foot">最高单日 <b>' +
-					num(max) +
-					"</b> 次 · 区间合计 <b>" +
-					num(sum) +
-					"</b> 次 · 灰柱为今天（仍在增长）</p>"
-			);
+
+			var notes = ["最高单日 <b>" + num(max) + "</b> 次", "区间合计 <b>" + num(sum) + "</b> 次"];
+			if (firstDay && firstDay !== series.dates[0]) {
+				notes.push("数据从 " + escapeHtml(shortDate(firstDay)) + " 开始记录");
+			}
+			if (todayValue > 0) notes.push("灰柱为今天（仍在增长）");
+
+			html.push('<p class="sp-chart-foot">' + notes.join(" · ") + "</p>");
 
 			box.innerHTML = html.join("");
 		});
