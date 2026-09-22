@@ -208,22 +208,31 @@
 			})
 			.filter(Boolean);
 
-		function paint(row, value) {
-			row.value = value;
+		// 只在「逐个取回」时刷新进度提示；真正的数字回填统一在 .then 里完成，
+		// 这样无论 getPostValues 是实时取还是命中缓存（命中时不会触发 onEach），
+		// 排行数量都不会停在占位符「…」。
+		function paint(row) {
 			var numNode = row.el.querySelector("[data-rank-num]");
-			if (numNode) numNode.textContent = num(value);
-			row.el.setAttribute("data-value", String(value));
+			if (numNode) numNode.textContent = num(row.value);
+			row.el.setAttribute("data-value", String(row.value));
 		}
 
 		return S.getPostValues(
 			ids,
-			function (done, total, id, value) {
-				var row = byId[id];
-				if (row) paint(row, value);
+			function (done, total) {
 				status("正在读取各篇文章阅读量 " + done + "/" + total + " …");
 			},
 			false
-		).then(function () {
+		).then(function (result) {
+			// 用返回值把每行的阅读量写回（result.values 与 ids 一一对应）
+			var values = (result && result.values) || [];
+			for (var k = 0; k < ids.length; k++) {
+				var v = Number(values[k]);
+				if (!isFinite(v) || v < 0) v = 0;
+				var r = byId[ids[k]];
+				if (r) r.value = v;
+			}
+
 			rows.sort(function (a, b) {
 				if (b.value !== a.value) return b.value - a.value;
 				// 阅读量相同按发布日期，早的在前
@@ -249,7 +258,11 @@
 					bar.style.width = pct + "%";
 				}
 
+				paint(row);
+
 				row.el.setAttribute("data-rank", String(i + 1));
+				// 第一名（且有阅读量）打上「选中」态，呼应主题的绿色强调
+				row.el.classList.toggle("is-top", i === 0 && row.value > 0);
 				row.el.style.display = topN > 0 && i >= topN ? "none" : "";
 				box.appendChild(row.el); // 按名次重排
 			}

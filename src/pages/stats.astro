@@ -162,13 +162,17 @@ const posts = enabled ? await getStatsPostList() : [];
     color: var(--content-meta);
   }
 
+  /* 按钮跟随主题强调色：绿色淡底 + 绿色描边 + 绿色字，hover 加深，
+     和主题里 bg-(--primary) 系按钮是同一套语言 */
   .sp-btn {
     flex: 0 0 auto;
-    padding: 0.35rem 0.85rem;
+    padding: 0.4rem 0.9rem;
     font-size: 0.8rem;
-    background: transparent;
-    border: 1px solid var(--line-divider);
+    font-weight: 600;
+    background: color-mix(in oklab, var(--primary) 12%, transparent);
+    border: 1px solid color-mix(in oklab, var(--primary) 30%, transparent);
     border-radius: 0.6rem;
+    color: var(--primary);
     cursor: pointer;
     transition:
       background 0.2s ease,
@@ -176,7 +180,7 @@ const posts = enabled ? await getStatsPostList() : [];
   }
 
   .sp-btn:hover {
-    background: var(--license-block-bg);
+    background: color-mix(in oklab, var(--primary) 20%, transparent);
   }
 
   .sp-btn:active {
@@ -194,21 +198,19 @@ const posts = enabled ? await getStatsPostList() : [];
      body 上并没有一个会在深色模式翻白的默认字色。自定义样式如果不上色，
      深色模式下就会拿到 rgb(0,0,0) ——黑字压在深色卡片上直接看不见。
      下面这组选择器覆盖所有「非 .sp-* 已显式上色」的正文元素。 */
+  /* 仅对「正文可读文字」做强色兜底（浅色黑字 / 深色白字）。
+     强调色（排行榜序号、数量、进度条、按钮、第一名选中态）统一交给主题 --primary（绿色）。 */
   .sp-title,
   .sp-card-value,
   .sp-section-title,
-  .sp-rank-title,
-  .sp-rank-num,
-  .sp-btn {
+  .sp-rank-title {
     color: rgb(0 0 0 / 0.9);
   }
 
   :root.dark .sp-title,
   :root.dark .sp-card-value,
   :root.dark .sp-section-title,
-  :root.dark .sp-rank-title,
-  :root.dark .sp-rank-num,
-  :root.dark .sp-btn {
+  :root.dark .sp-rank-title {
     color: rgb(255 255 255 / 0.9);
   }
 
@@ -346,7 +348,17 @@ const posts = enabled ? await getStatsPostList() : [];
   }
 
   .sp-rank-row:hover {
-    background: var(--license-block-bg);
+    background: color-mix(in oklab, var(--primary) 8%, transparent);
+  }
+
+  /* 第一名（且有阅读量）：绿色「选中」态，呼应主题强调色与选中效果 */
+  .sp-rank-row.is-top {
+    background: color-mix(in oklab, var(--primary) 12%, transparent);
+    box-shadow: inset 3px 0 0 0 var(--primary);
+  }
+
+  .sp-rank-row.is-top:hover {
+    background: color-mix(in oklab, var(--primary) 18%, transparent);
   }
 
   .sp-rank-no {
@@ -355,7 +367,7 @@ const posts = enabled ? await getStatsPostList() : [];
     text-align: center;
     font-weight: 700;
     font-variant-numeric: tabular-nums;
-    color: var(--content-meta);
+    color: var(--primary);
   }
 
   .sp-rank-main {
@@ -382,7 +394,7 @@ const posts = enabled ? await getStatsPostList() : [];
     display: block;
     height: 0.3rem;
     border-radius: 999px;
-    background: var(--license-block-bg);
+    background: color-mix(in oklab, var(--primary) 12%, transparent);
     overflow: hidden;
   }
 
@@ -399,8 +411,9 @@ const posts = enabled ? await getStatsPostList() : [];
     flex: 0 0 auto;
     min-width: 3.5rem;
     text-align: right;
-    font-weight: 600;
+    font-weight: 700;
     font-variant-numeric: tabular-nums;
+    color: var(--primary);
   }
 
   /* 状态与说明 */
