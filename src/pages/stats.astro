@@ -162,17 +162,17 @@ const posts = enabled ? await getStatsPostList() : [];
     color: var(--content-meta);
   }
 
-  /* 按钮跟随主题强调色：绿色淡底 + 绿色描边 + 绿色字，hover 加深，
-     和主题里 bg-(--primary) 系按钮是同一套语言 */
+  /* 按钮：浅绿淡底 + 浅绿描边 + 浅绿字，hover 加深，
+     和主题按钮同一套语言，只是换成统计页专用浅绿 --sp-accent */
   .sp-btn {
     flex: 0 0 auto;
     padding: 0.4rem 0.9rem;
     font-size: 0.8rem;
     font-weight: 600;
-    background: color-mix(in oklab, var(--primary) 12%, transparent);
-    border: 1px solid color-mix(in oklab, var(--primary) 30%, transparent);
+    background: color-mix(in oklab, var(--sp-accent) 12%, transparent);
+    border: 1px solid color-mix(in oklab, var(--sp-accent) 30%, transparent);
     border-radius: 0.6rem;
-    color: var(--primary);
+    color: var(--sp-accent);
     cursor: pointer;
     transition:
       background 0.2s ease,
@@ -180,7 +180,7 @@ const posts = enabled ? await getStatsPostList() : [];
   }
 
   .sp-btn:hover {
-    background: color-mix(in oklab, var(--primary) 20%, transparent);
+    background: color-mix(in oklab, var(--sp-accent) 20%, transparent);
   }
 
   .sp-btn:active {
@@ -193,13 +193,24 @@ const posts = enabled ? await getStatsPostList() : [];
     margin-top: 0.75rem;
   }
 
+  /* 统计页专用「浅绿」强调色。
+     站点主色 --primary 是 hue180 的青绿色，用户要的是浅绿色，
+     所以这里单独定义一套浅绿（而非复用 --primary）。
+     亮色 / 深色模式分别取值，自动跟随主题明暗。 */
+  :root {
+    --sp-accent: #2bb673;
+  }
+  :root.dark {
+    --sp-accent: #5ad69c;
+  }
+
   /* ⚠️ 不要依赖「继承」拿文字颜色。
      主题只在它自己的组件里用 text-black/90 dark:text-white/90 这类工具类显式上色，
      body 上并没有一个会在深色模式翻白的默认字色。自定义样式如果不上色，
      深色模式下就会拿到 rgb(0,0,0) ——黑字压在深色卡片上直接看不见。
      下面这组选择器覆盖所有「非 .sp-* 已显式上色」的正文元素。 */
   /* 仅对「正文可读文字」做强色兜底（浅色黑字 / 深色白字）。
-     强调色（排行榜序号、数量、进度条、按钮、第一名选中态）统一交给主题 --primary（绿色）。 */
+     强调色（排行榜序号、数量、进度条、按钮、第一名选中态）统一交给统计页专用浅绿 --sp-accent。 */
   .sp-title,
   .sp-card-value,
   .sp-section-title,
@@ -273,7 +284,7 @@ const posts = enabled ? await getStatsPostList() : [];
   }
 
   .sp-section-extra b {
-    color: var(--primary);
+    color: var(--sp-accent);
   }
 
   /* 趋势图 */
@@ -299,15 +310,15 @@ const posts = enabled ? await getStatsPostList() : [];
     justify-content: center;
   }
 
-  /* 柱子一律用主题强调色 --primary —— 和主题自己的 bg-(--primary) 徽章是同一个值，
+  /* 柱子一律用统计页浅绿 --sp-accent ——
      不做透明弱化、更不要给「今天」换成灰色（--content-meta）之类的中性色，
-     否则图表里会冒出一块不属于主题色的色块。
-     「今天」用刻度文字（主题色 + 加粗）区分，而不是换颜色。 */
+     否则图表里会冒出一块不和谐的色块。
+     「今天」用刻度文字（浅绿 + 加粗）区分，而不是换颜色。 */
   .sp-bar {
     width: 100%;
     min-height: 2px;
     border-radius: 4px 4px 2px 2px;
-    background: var(--primary);
+    background: var(--sp-accent);
     animation: sp-grow 0.5s ease both;
   }
 
@@ -324,7 +335,7 @@ const posts = enabled ? await getStatsPostList() : [];
   }
 
   .sp-bar-wrap.is-today .sp-bar-label {
-    color: var(--primary);
+    color: var(--sp-accent);
     font-weight: 600;
   }
 
@@ -348,17 +359,17 @@ const posts = enabled ? await getStatsPostList() : [];
   }
 
   .sp-rank-row:hover {
-    background: color-mix(in oklab, var(--primary) 8%, transparent);
+    background: color-mix(in oklab, var(--sp-accent) 8%, transparent);
   }
 
   /* 第一名（且有阅读量）：绿色「选中」态，呼应主题强调色与选中效果 */
   .sp-rank-row.is-top {
-    background: color-mix(in oklab, var(--primary) 12%, transparent);
-    box-shadow: inset 3px 0 0 0 var(--primary);
+    background: color-mix(in oklab, var(--sp-accent) 12%, transparent);
+    box-shadow: inset 3px 0 0 0 var(--sp-accent);
   }
 
   .sp-rank-row.is-top:hover {
-    background: color-mix(in oklab, var(--primary) 18%, transparent);
+    background: color-mix(in oklab, var(--sp-accent) 18%, transparent);
   }
 
   .sp-rank-no {
@@ -367,7 +378,7 @@ const posts = enabled ? await getStatsPostList() : [];
     text-align: center;
     font-weight: 700;
     font-variant-numeric: tabular-nums;
-    color: var(--primary);
+    color: var(--sp-accent);
   }
 
   .sp-rank-main {
@@ -394,7 +405,7 @@ const posts = enabled ? await getStatsPostList() : [];
     display: block;
     height: 0.3rem;
     border-radius: 999px;
-    background: color-mix(in oklab, var(--primary) 12%, transparent);
+    background: color-mix(in oklab, var(--sp-accent) 12%, transparent);
     overflow: hidden;
   }
 
@@ -403,7 +414,7 @@ const posts = enabled ? await getStatsPostList() : [];
     height: 100%;
     width: 0;
     border-radius: 999px;
-    background: var(--primary);
+    background: var(--sp-accent);
     transition: width 0.6s ease;
   }
 
@@ -413,7 +424,7 @@ const posts = enabled ? await getStatsPostList() : [];
     text-align: right;
     font-weight: 700;
     font-variant-numeric: tabular-nums;
-    color: var(--primary);
+    color: var(--sp-accent);
   }
 
   /* 状态与说明 */
