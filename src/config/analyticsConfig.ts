@@ -2,7 +2,7 @@ import type { AnalyticsConfig } from "../types/analyticsConfig";
 
 export const analyticsConfig: AnalyticsConfig = {
 	googleAnalyticsId: "",
-	microsoftClarityId: "",
+	microsoftClarityId: "ym9t8zewr8",
 	umamiAnalytics: {
 		websiteId: "",
 		scriptUrl: "https://cloud.umami.is/script.js",
