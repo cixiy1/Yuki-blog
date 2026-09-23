@@ -317,7 +317,7 @@ export const zh_CN: Translation = {
 	[Key.sponsorDescription]:
 		"如果我的内容对你有帮助，欢迎通过以下方式打赏我，你的支持是我持续创作的动力！",
 	[Key.sponsorMethods]: "打赏方式",
-	[Key.sponsorList]: "打赏列表",
+	[Key.sponsorList]: "感谢打赏",
 	[Key.sponsorEmpty]: "暂无打赏记录",
 	[Key.sponsorAmount]: "金额",
 	[Key.sponsorDate]: "日期",
