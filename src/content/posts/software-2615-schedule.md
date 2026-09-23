@@ -85,6 +85,7 @@ html.dark .tt-root{--tt-panel:#181c1f;--tt-panel2:#20262a;--tt-line:rgba(255,255
 .tt-dnote{padding:0 12px 10px;font-size:12px;color:var(--tt-tx2);line-height:1.6}
 @media(max-width:640px){.tt-list{display:block}.tt-panel{padding:12px}}
 .tt-notices-panel{margin-bottom:14px}
+.tt-notices-panel .tt-top{margin-bottom:10px}
 .tt-notices{display:flex;flex-direction:column;gap:10px}
 .tt-nt{border-left:3px solid var(--tt-on-bd);background:var(--tt-panel2);border-radius:8px;padding:8px 12px}
 .tt-nt-head{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:2px}
