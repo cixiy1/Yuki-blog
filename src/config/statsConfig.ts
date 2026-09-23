@@ -4,10 +4,10 @@ import type { StatsConfig } from "../types/statsConfig";
 // 站内访问统计配置
 // ============================================================================
 // 计数后端使用 abacus（https://jasoncameron.dev/abacus/，免费、免注册、支持跨域读）。
-// 但 abacus.jasoncameron.dev 是个人 Cloudflare Worker，国内浏览器常不可达/不稳定，
-// 且作者正在迁移到 v2（文档根已 308 跳转）。因此这里不再直连 abacus，而是改调
-// 本站同源接口（functions/get、functions/hit 两个 CF Pages Function 做反向代理，
-// 服务端去拉 abacus），既保留历史计数，又保证国内访问必达。
+// ⚠️ abacus.jasoncameron.dev 是个人 Cloudflare Worker，国内浏览器常不可达/不稳定，
+//    且作者正在迁移到 v2（文档根已 308 跳转）。若国内访问时统计数字不增长，多半是此原因。
+//    推荐修法：用仓库根目录的 stats-proxy-worker.js 部署一个「建在你自己 yiyu14.top 子域下的」
+//    Cloudflare Worker 做反向代理（服务端去拉 abacus），再把下面 apiBase 改成该 Worker 地址即可。
 //
 // 数据存放在 namespace 下的若干计数器里：
 //   site                 站点总浏览量
@@ -23,8 +23,7 @@ import type { StatsConfig } from "../types/statsConfig";
 export const statsConfig: StatsConfig = {
 	enable: true,
 
-	// 同源入口：由 functions/get、functions/hit 代理到 abacus（见上方说明）
-	apiBase: "https://yiyu14.top",
+	apiBase: "https://abacus.jasoncameron.dev",
 	namespace: "yiyu14.top",
 
 	// 文章页显示「N 阅读」
