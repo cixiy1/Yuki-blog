@@ -209,13 +209,15 @@ const posts = enabled ? await getStatsPostList() : [];
      body 上并没有一个会在深色模式翻白的默认字色。自定义样式如果不上色，
      深色模式下就会拿到 rgb(0,0,0) ——黑字压在深色卡片上直接看不见。
      下面这组选择器覆盖所有「非 .sp-* 已显式上色」的正文元素。 */
-  /* 仅对「正文可读文字」做强色兜底（浅色黑字 / 深色白字）。
-     强调色（排行榜序号、数量、进度条、按钮、第一名选中态）统一交给统计页专用浅绿 --sp-accent。 */
+  /* 仅对「正文可读文字」做强色兜底（浅色黑字 / 深色浅字），跟随主题明暗。
+     - 主规则用 light-dark() 按 color-scheme 切换，覆盖「系统跟随」这类没挂 .dark class 的情况；
+     - 下方 :root.dark 规则按主题 .dark class 兜底（深色下取值一致，互不冲突）。
+     主题正文翻白本就是 black/90 → white/90 这一套。 */
   .sp-title,
   .sp-card-value,
   .sp-section-title,
   .sp-rank-title {
-    color: rgb(0 0 0 / 0.9);
+    color: light-dark(rgb(0 0 0 / 0.9), rgb(255 255 255 / 0.9));
   }
 
   :root.dark .sp-title,
