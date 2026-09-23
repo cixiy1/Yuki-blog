@@ -299,16 +299,6 @@ const posts = enabled ? await getStatsPostList() : [];
     background: color-mix(in oklab, var(--primary) 8%, transparent);
   }
 
-  /* 第一名（且有阅读量）：主题强调色「选中」态，呼应主题选中效果 */
-  .sp-rank-row.is-top {
-    background: color-mix(in oklab, var(--primary) 12%, transparent);
-    box-shadow: inset 3px 0 0 0 var(--primary);
-  }
-
-  .sp-rank-row.is-top:hover {
-    background: color-mix(in oklab, var(--primary) 18%, transparent);
-  }
-
   .sp-rank-no {
     flex: 0 0 auto;
     width: 1.6rem;

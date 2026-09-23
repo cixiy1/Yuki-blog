@@ -260,10 +260,8 @@
 
 				paint(row);
 
-				row.el.setAttribute("data-rank", String(i + 1));
-				// 第一名（且有阅读量）打上「选中」态，呼应主题的绿色强调
-				row.el.classList.toggle("is-top", i === 0 && row.value > 0);
-				row.el.style.display = topN > 0 && i >= topN ? "none" : "";
+			row.el.setAttribute("data-rank", String(i + 1));
+			row.el.style.display = topN > 0 && i >= topN ? "none" : "";
 				box.appendChild(row.el); // 按名次重排
 			}
 
