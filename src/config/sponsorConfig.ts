@@ -17,5 +17,9 @@ export const sponsorConfig: SponsorConfig = {
 			enabled: true
 		}
 	],
-	sponsors: []
+	sponsors: [
+		{
+			name: "苏志锦（校友）"
+		}
+	]
 };
