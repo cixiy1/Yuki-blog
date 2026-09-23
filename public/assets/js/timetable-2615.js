@@ -131,6 +131,35 @@
 			e.changes.push({ t: "move", note: ov.note || "", old: oldPos });
 		}
 		});
+		/* 晚自习：晚上没正课时默认安排（19:00–20:30）。
+		   规则：周一~周五的 9-10 节，若当天该节无任何 active 正课（含临时新增），
+		   且该周有教学安排（排除整周放假 / 非教学周 offWeeks），则注入晚自习。 */
+		var ss = DATA.meta.selfStudy;
+		if (ss && ss.enabled) {
+			var off = ss.offWeeks || [];
+			if (off.indexOf(w) < 0) {
+				var hasClass = entries.some(function (e) { return e.active; });
+				if (hasClass) {
+				var offDays = ss.offDays || [];
+				(ss.days || [1, 2, 3, 4, 5]).forEach(function (d) {
+					var offDay = offDays.some(function (p) { return p[0] === w && p[1] === d; });
+					if (offDay) return;
+					var occupied = entries.some(function (e) {
+						return e.day === d && e.slot === ss.slot && e.active;
+					});
+					if (!occupied) {
+						entries.push({
+							id: "selfstudy-d" + d, day: d, slot: ss.slot,
+							name: ss.name || "晚自习", short: ss.short || ss.name || "晚自习",
+							room: "", teacher: "", weeks: String(w),
+							active: true, cancelled: false, temp: false,
+							selfStudy: true, changes: []
+						});
+					}
+				});
+				}
+			}
+		}
 		return { entries: entries, notes: notes };
 	}
 
@@ -157,7 +186,7 @@
 			if (c.t === "room") oldRoom = c.old || "";
 			if (c.t === "move" && c.old) { oldPos = c.old; oldRoom = c.old.room || oldRoom; }
 		});
-		var state = e.cancelled ? "本周停课" : e.active ? (e.temp ? "临时安排" : "本周有课") : "本周不上";
+		var state = e.selfStudy ? "晚自习（默认安排）" : e.cancelled ? "本周停课" : e.active ? (e.temp ? "临时安排" : "本周有课") : "本周不上";
 		var timeTxt = SLOTS.indexOf(e.slot) < 0
 			? (st.time || e.slot)
 			: (st.label || e.slot) + " " + (st.time || "");
@@ -225,7 +254,7 @@
 				var cell = null;
 				res.entries.forEach(function (e) { if (e.day === d && e.slot === sk) cell = e; });
 				if (!cell) { html += '<div class="tt-cell is-empty"></div>'; continue; }
-				var cls = "tt-cell " + (cell.cancelled ? "is-cancel" : cell.active ? (cell.temp ? "is-add" : "is-on") : "is-off");
+				var cls = "tt-cell " + (cell.cancelled ? "is-cancel" : cell.selfStudy ? "is-study" : cell.active ? (cell.temp ? "is-add" : "is-on") : "is-off");
 				var flag = "";
 				if (cell.changes.length) {
 					/* 停课优先：一门课可能既有长期「改地点」又有本周「停课」，
@@ -281,7 +310,7 @@
 
 		var list = document.getElementById("tt-list");
 		if (list) {
-			var on = res.entries.filter(function (e) { return e.active; }).sort(function (a, b) {
+			var on = res.entries.filter(function (e) { return e.active && !e.selfStudy; }).sort(function (a, b) {
 				return a.day - b.day || SLOTS.indexOf(a.slot) - SLOTS.indexOf(b.slot);
 			});
 			list.innerHTML = on.map(function (e) {

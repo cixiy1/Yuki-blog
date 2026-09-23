@@ -14,8 +14,8 @@ comment: true
 
 <div class="tt-root">
 <style>
-.tt-root{--tt-panel:#fff;--tt-panel2:#f6f8f9;--tt-line:rgba(0,0,0,.09);--tt-tx:#23282e;--tt-tx2:#6a7480;--tt-on-bg:#e4f5f3;--tt-on-bd:#7cc9c0;--tt-on-tx:#12655e;--tt-off-bg:#f2f4f6;--tt-off-tx:#a3abb4;--tt-add-bg:#e8f4e2;--tt-add-bd:#8fc46b;--tt-add-tx:#3f6b1f;--tt-cx-bg:#fdecec;--tt-cx-tx:#a33;--tt-f-room-bg:#fff2d9;--tt-f-room:#b26a00;--tt-f-cx-bg:#fdecec;--tt-f-cx:#b03030;--tt-f-add-bg:#e8f4e2;--tt-f-add:#3f6b1f;--tt-f-mv-bg:#efe9fd;--tt-f-mv:#6a4fc0;--tt-today-bd:#5b8def}
-html.dark .tt-root{--tt-panel:#181c1f;--tt-panel2:#20262a;--tt-line:rgba(255,255,255,.1);--tt-tx:#e6edf3;--tt-tx2:#9aa6b2;--tt-on-bg:#123c3a;--tt-on-bd:#3f9c93;--tt-on-tx:#a7e5dc;--tt-off-bg:#1d2226;--tt-off-tx:#5f6a75;--tt-add-bg:#1f3319;--tt-add-bd:#4f8a3a;--tt-add-tx:#a8d68a;--tt-cx-bg:#3a1a1a;--tt-cx-tx:#f29a9a;--tt-f-room-bg:#4a3410;--tt-f-room:#f5c46b;--tt-f-cx-bg:#4a1a1a;--tt-f-cx:#f29a9a;--tt-f-add-bg:#23391a;--tt-f-add:#a8d68a;--tt-f-mv-bg:#2e2748;--tt-f-mv:#c0b0f0;--tt-today-bd:#5b8def}
+.tt-root{--tt-panel:#fff;--tt-panel2:#f6f8f9;--tt-line:rgba(0,0,0,.09);--tt-tx:#23282e;--tt-tx2:#6a7480;--tt-on-bg:#e4f5f3;--tt-on-bd:#7cc9c0;--tt-on-tx:#12655e;--tt-off-bg:#f2f4f6;--tt-off-tx:#a3abb4;--tt-add-bg:#e8f4e2;--tt-add-bd:#8fc46b;--tt-add-tx:#3f6b1f;--tt-cx-bg:#fdecec;--tt-cx-tx:#a33;--tt-f-room-bg:#fff2d9;--tt-f-room:#b26a00;--tt-f-cx-bg:#fdecec;--tt-f-cx:#b03030;--tt-f-add-bg:#e8f4e2;--tt-f-add:#3f6b1f;--tt-f-mv-bg:#efe9fd;--tt-f-mv:#6a4fc0;--tt-today-bd:#5b8def;--tt-study-bg:#e9eefc;--tt-study-bd:#9bb6e8;--tt-study-tx:#2f4f8f}
+html.dark .tt-root{--tt-panel:#181c1f;--tt-panel2:#20262a;--tt-line:rgba(255,255,255,.1);--tt-tx:#e6edf3;--tt-tx2:#9aa6b2;--tt-on-bg:#123c3a;--tt-on-bd:#3f9c93;--tt-on-tx:#a7e5dc;--tt-off-bg:#1d2226;--tt-off-tx:#5f6a75;--tt-add-bg:#1f3319;--tt-add-bd:#4f8a3a;--tt-add-tx:#a8d68a;--tt-cx-bg:#3a1a1a;--tt-cx-tx:#f29a9a;--tt-f-room-bg:#4a3410;--tt-f-room:#f5c46b;--tt-f-cx-bg:#4a1a1a;--tt-f-cx:#f29a9a;--tt-f-add-bg:#23391a;--tt-f-add:#a8d68a;--tt-f-mv-bg:#2e2748;--tt-f-mv:#c0b0f0;--tt-today-bd:#5b8def;--tt-study-bg:#1d2740;--tt-study-bd:#3f5fa8;--tt-study-tx:#aebfe6}
 .tt-root{margin:18px 0;font-size:13px;line-height:1.6;color:var(--tt-tx)}
 .tt-panel{background:var(--tt-panel);border:1px solid var(--tt-line);border-radius:14px;padding:16px}
 .tt-top{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px}
@@ -45,6 +45,7 @@ html.dark .tt-root{--tt-panel:#181c1f;--tt-panel2:#20262a;--tt-line:rgba(255,255
 .is-on{background:var(--tt-on-bg);border-color:var(--tt-on-bd);color:var(--tt-on-tx)}
 .is-off{background:var(--tt-off-bg);color:var(--tt-off-tx)}
 .is-add{background:var(--tt-add-bg);border-color:var(--tt-add-bd);color:var(--tt-add-tx)}
+.is-study{background:var(--tt-study-bg);border-color:var(--tt-study-bd);color:var(--tt-study-tx)}
 .is-cancel{background:var(--tt-cx-bg);color:var(--tt-cx-tx)}
 .is-cancel b{text-decoration:line-through}
 .is-empty{background:transparent}
@@ -110,7 +111,7 @@ html.dark .tt-root{--tt-panel:#181c1f;--tt-panel2:#20262a;--tt-line:rgba(255,255
 <div id="tt-grid" class="tt-grid"></div>
 <div id="tt-detail" class="tt-detail is-empty"></div>
 <ul id="tt-list" class="tt-list"></ul>
-<div class="tt-legend"><span><i style="background:var(--tt-on-bg);border:1px solid var(--tt-on-bd)"></i>本周有课</span><span><i style="background:var(--tt-off-bg)"></i>本周不上</span><span><i style="background:var(--tt-f-room-bg)"></i>改地点</span><span><i style="background:var(--tt-f-mv-bg)"></i>调课 / 对调</span><span><i style="background:var(--tt-f-cx-bg)"></i>停课</span><span><i style="background:var(--tt-add-bg);border:1px solid var(--tt-add-bd)"></i>临时新增</span></div>
+<div class="tt-legend"><span><i style="background:var(--tt-on-bg);border:1px solid var(--tt-on-bd)"></i>本周有课</span><span><i style="background:var(--tt-off-bg)"></i>本周不上</span><span><i style="background:var(--tt-f-room-bg)"></i>改地点</span><span><i style="background:var(--tt-f-mv-bg)"></i>调课 / 对调</span><span><i style="background:var(--tt-f-cx-bg)"></i>停课</span><span><i style="background:var(--tt-add-bg);border:1px solid var(--tt-add-bd)"></i>临时新增</span><span><i style="background:var(--tt-study-bg);border:1px solid var(--tt-study-bd)"></i>晚自习</span></div>
 <div class="tt-foot"><span id="tt-meta"></span></div>
 <div class="tt-sec"><div class="tt-h4">北校区作息时间</div><ul id="tt-periods" class="tt-periods"></ul></div>
 </div>
