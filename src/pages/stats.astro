@@ -1,5 +1,6 @@
 ---
 import MainGridLayout from "@layouts/MainGridLayout.astro";
+import { Icon } from "astro-icon/components";
 import { statsConfig } from "@/config";
 import { getStatsPostList } from "@/utils/stats-utils";
 
@@ -36,15 +37,21 @@ const posts = enabled ? await getStatsPostList() : [];
               <section class="sp-group">
                 <h3 class="sp-group-title">总计</h3>
                 <div class="sp-group-cards">
-                  <div class="sp-card">
-                    <div class="sp-card-label text-black/70 dark:text-white/60">总浏览量</div>
-                    <div class="sp-card-value" data-stat="pv">—</div>
-                    <div class="sp-card-sub text-black/70 dark:text-white/60">建站至今</div>
+                  <div class="sp-card bg-neutral-100/60 dark:bg-neutral-800/50">
+                    <div class="sp-card-top">
+                      <span class="sp-card-icon text-(--primary)"><Icon is:inline name="material-symbols:visibility" /></span>
+                      <span class="sp-card-label text-neutral-500 dark:text-neutral-400">总浏览量</span>
+                    </div>
+                    <div class="sp-card-value text-neutral-900 dark:text-neutral-100" data-stat="pv">—</div>
+                    <div class="sp-card-sub text-neutral-500 dark:text-neutral-400">建站至今</div>
                   </div>
-                  <div class="sp-card">
-                    <div class="sp-card-label text-black/70 dark:text-white/60">总访客数</div>
-                    <div class="sp-card-value" data-stat="uv">—</div>
-                    <div class="sp-card-sub text-black/70 dark:text-white/60">浏览器去重</div>
+                  <div class="sp-card bg-neutral-100/60 dark:bg-neutral-800/50">
+                    <div class="sp-card-top">
+                      <span class="sp-card-icon text-(--primary)"><Icon is:inline name="material-symbols:group" /></span>
+                      <span class="sp-card-label text-neutral-500 dark:text-neutral-400">总访客数</span>
+                    </div>
+                    <div class="sp-card-value text-neutral-900 dark:text-neutral-100" data-stat="uv">—</div>
+                    <div class="sp-card-sub text-neutral-500 dark:text-neutral-400">浏览器去重</div>
                   </div>
                 </div>
               </section>
@@ -52,15 +59,21 @@ const posts = enabled ? await getStatsPostList() : [];
               <section class="sp-group">
                 <h3 class="sp-group-title">单日 · 今日</h3>
                 <div class="sp-group-cards">
-                  <div class="sp-card">
-                    <div class="sp-card-label text-black/70 dark:text-white/60">浏览量</div>
-                    <div class="sp-card-value" data-stat="pvToday">—</div>
-                    <div class="sp-card-sub text-black/70 dark:text-white/60">截至现在</div>
+                  <div class="sp-card bg-neutral-100/60 dark:bg-neutral-800/50">
+                    <div class="sp-card-top">
+                      <span class="sp-card-icon text-(--primary)"><Icon is:inline name="material-symbols:visibility" /></span>
+                      <span class="sp-card-label text-neutral-500 dark:text-neutral-400">浏览量</span>
+                    </div>
+                    <div class="sp-card-value text-neutral-900 dark:text-neutral-100" data-stat="pvToday">—</div>
+                    <div class="sp-card-sub text-neutral-500 dark:text-neutral-400">截至现在</div>
                   </div>
-                  <div class="sp-card">
-                    <div class="sp-card-label text-black/70 dark:text-white/60">访客数</div>
-                    <div class="sp-card-value" data-stat="uvToday">—</div>
-                    <div class="sp-card-sub text-black/70 dark:text-white/60">截至现在</div>
+                  <div class="sp-card bg-neutral-100/60 dark:bg-neutral-800/50">
+                    <div class="sp-card-top">
+                      <span class="sp-card-icon text-(--primary)"><Icon is:inline name="material-symbols:group" /></span>
+                      <span class="sp-card-label text-neutral-500 dark:text-neutral-400">访客数</span>
+                    </div>
+                    <div class="sp-card-value text-neutral-900 dark:text-neutral-100" data-stat="uvToday">—</div>
+                    <div class="sp-card-sub text-neutral-500 dark:text-neutral-400">截至现在</div>
                   </div>
                 </div>
               </section>
@@ -68,15 +81,21 @@ const posts = enabled ? await getStatsPostList() : [];
               <section class="sp-group">
                 <h3 class="sp-group-title">单周 · 本周</h3>
                 <div class="sp-group-cards">
-                  <div class="sp-card">
-                    <div class="sp-card-label text-black/70 dark:text-white/60">浏览量</div>
-                    <div class="sp-card-value" data-stat="pvWeek">—</div>
-                    <div class="sp-card-sub text-black/70 dark:text-white/60">周一至今</div>
+                  <div class="sp-card bg-neutral-100/60 dark:bg-neutral-800/50">
+                    <div class="sp-card-top">
+                      <span class="sp-card-icon text-(--primary)"><Icon is:inline name="material-symbols:visibility" /></span>
+                      <span class="sp-card-label text-neutral-500 dark:text-neutral-400">浏览量</span>
+                    </div>
+                    <div class="sp-card-value text-neutral-900 dark:text-neutral-100" data-stat="pvWeek">—</div>
+                    <div class="sp-card-sub text-neutral-500 dark:text-neutral-400">周一至今</div>
                   </div>
-                  <div class="sp-card">
-                    <div class="sp-card-label text-black/70 dark:text-white/60">访客数</div>
-                    <div class="sp-card-value" data-stat="uvWeek">—</div>
-                    <div class="sp-card-sub text-black/70 dark:text-white/60">周一至今</div>
+                  <div class="sp-card bg-neutral-100/60 dark:bg-neutral-800/50">
+                    <div class="sp-card-top">
+                      <span class="sp-card-icon text-(--primary)"><Icon is:inline name="material-symbols:group" /></span>
+                      <span class="sp-card-label text-neutral-500 dark:text-neutral-400">访客数</span>
+                    </div>
+                    <div class="sp-card-value text-neutral-900 dark:text-neutral-100" data-stat="uvWeek">—</div>
+                    <div class="sp-card-sub text-neutral-500 dark:text-neutral-400">周一至今</div>
                   </div>
                 </div>
               </section>
@@ -211,9 +230,22 @@ const posts = enabled ? await getStatsPostList() : [];
   }
 
   .sp-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
     padding: 0.9rem 1rem;
     border-radius: 0.75rem;
-    background: var(--license-block-bg);
+  }
+
+  .sp-card-top {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .sp-card-icon {
+    line-height: 1;
+    font-size: 1.15rem;
   }
 
   .sp-card-label {
@@ -221,8 +253,7 @@ const posts = enabled ? await getStatsPostList() : [];
   }
 
   .sp-card-value {
-    margin: 0.15rem 0 0.1rem;
-    font-size: 1.5rem;
+    font-size: 1.6rem;
     line-height: 1.9rem;
     font-weight: 700;
     font-variant-numeric: tabular-nums;
