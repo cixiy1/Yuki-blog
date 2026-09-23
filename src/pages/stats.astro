@@ -33,34 +33,53 @@ const posts = enabled ? await getStatsPostList() : [];
 
             {/* 概览 */}
             <div class="sp-cards">
-              <div class="sp-card">
-                <div class="sp-card-label text-black/70 dark:text-white/60">总浏览量</div>
-                <div class="sp-card-value" data-stat="pv">
-                  —
+              <section class="sp-group">
+                <h3 class="sp-group-title">总计</h3>
+                <div class="sp-group-cards">
+                  <div class="sp-card">
+                    <div class="sp-card-label text-black/70 dark:text-white/60">总浏览量</div>
+                    <div class="sp-card-value" data-stat="pv">—</div>
+                    <div class="sp-card-sub text-black/70 dark:text-white/60">建站至今</div>
+                  </div>
+                  <div class="sp-card">
+                    <div class="sp-card-label text-black/70 dark:text-white/60">总访客数</div>
+                    <div class="sp-card-value" data-stat="uv">—</div>
+                    <div class="sp-card-sub text-black/70 dark:text-white/60">浏览器去重</div>
+                  </div>
                 </div>
-                <div class="sp-card-sub text-black/70 dark:text-white/60">建站至今</div>
-              </div>
-              <div class="sp-card">
-                <div class="sp-card-label text-black/70 dark:text-white/60">总访客数</div>
-                <div class="sp-card-value" data-stat="uv">
-                  —
+              </section>
+
+              <section class="sp-group">
+                <h3 class="sp-group-title">单日 · 今日</h3>
+                <div class="sp-group-cards">
+                  <div class="sp-card">
+                    <div class="sp-card-label text-black/70 dark:text-white/60">浏览量</div>
+                    <div class="sp-card-value" data-stat="pvToday">—</div>
+                    <div class="sp-card-sub text-black/70 dark:text-white/60">截至现在</div>
+                  </div>
+                  <div class="sp-card">
+                    <div class="sp-card-label text-black/70 dark:text-white/60">访客数</div>
+                    <div class="sp-card-value" data-stat="uvToday">—</div>
+                    <div class="sp-card-sub text-black/70 dark:text-white/60">截至现在</div>
+                  </div>
                 </div>
-                <div class="sp-card-sub text-black/70 dark:text-white/60">浏览器去重</div>
-              </div>
-              <div class="sp-card">
-                <div class="sp-card-label text-black/70 dark:text-white/60">今日浏览</div>
-                <div class="sp-card-value" data-stat="pvToday">
-                  —
+              </section>
+
+              <section class="sp-group">
+                <h3 class="sp-group-title">单周 · 本周</h3>
+                <div class="sp-group-cards">
+                  <div class="sp-card">
+                    <div class="sp-card-label text-black/70 dark:text-white/60">浏览量</div>
+                    <div class="sp-card-value" data-stat="pvWeek">—</div>
+                    <div class="sp-card-sub text-black/70 dark:text-white/60">周一至今</div>
+                  </div>
+                  <div class="sp-card">
+                    <div class="sp-card-label text-black/70 dark:text-white/60">访客数</div>
+                    <div class="sp-card-value" data-stat="uvWeek">—</div>
+                    <div class="sp-card-sub text-black/70 dark:text-white/60">周一至今</div>
+                  </div>
                 </div>
-                <div class="sp-card-sub text-black/70 dark:text-white/60">截至现在</div>
-              </div>
-              <div class="sp-card">
-                <div class="sp-card-label text-black/70 dark:text-white/60">今日访客</div>
-                <div class="sp-card-value" data-stat="uvToday">
-                  —
-                </div>
-                <div class="sp-card-sub text-black/70 dark:text-white/60">截至现在</div>
-              </div>
+              </section>
             </div>
 
             {/* 趋势 */}
@@ -166,8 +185,26 @@ const posts = enabled ? await getStatsPostList() : [];
     font-size: 0.85rem;
   }
 
-  /* 概览卡片 */
+  /* 概览分组 */
   .sp-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  .sp-group {
+    margin: 0;
+  }
+
+  .sp-group-title {
+    margin: 0 0 0.6rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--content-meta);
+    letter-spacing: 0.02em;
+  }
+
+  .sp-group-cards {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr));
     gap: 0.75rem;

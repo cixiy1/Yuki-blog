@@ -80,11 +80,16 @@
 	/* ------------------------------------------------------------------ */
 
 	function renderOverview() {
-		return S.getSiteTotals().then(function (t) {
+		var weekP = S.getWeekTotals ? S.getWeekTotals() : Promise.resolve(null);
+		return Promise.all([S.getSiteTotals(), weekP]).then(function (res) {
+			var t = res[0] || {};
+			var w = res[1] || {};
 			setText('[data-stat="pv"]', t.pv === null ? "—" : num(t.pv));
 			setText('[data-stat="uv"]', t.uv === null ? "—" : num(t.uv));
 			setText('[data-stat="pvToday"]', t.pvToday === null ? "—" : num(t.pvToday));
 			setText('[data-stat="uvToday"]', t.uvToday === null ? "—" : num(t.uvToday));
+			setText('[data-stat="pvWeek"]', typeof w.pvWeek === "number" ? num(w.pvWeek) : "—");
+			setText('[data-stat="uvWeek"]', typeof w.uvWeek === "number" ? num(w.uvWeek) : "—");
 			var root = el("stats-root");
 			if (root) root.setAttribute("data-overview", "1");
 		});

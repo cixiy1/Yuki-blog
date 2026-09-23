@@ -14,6 +14,7 @@
  *   ready                    （属性）最近一次「记录」完成的 Promise，进入 /stats 前先 await
  *   record()                 手动触发一次记录
  *   getSiteTotals()          → {pv, uv, pvToday, uvToday, date}
+ *   getWeekTotals()          → {pvWeek, uvWeek, weekStart, weekEnd, days}  本周一至今
  *   getDaySeries(days, cb)   → {dates, values}  历史天数永久缓存，只重取「今天」
  *   getPostValues(ids, cb)   → {values, cached} 按 id 批量取，带缓存
  *   formatNumber(n)          数字格式化（1.2w）
@@ -397,6 +398,46 @@
 	 * 近 N 天浏览量。
 	 * 历史天数一旦取到就永久缓存（历史值不会再变），每次只重新取「今天」。
 	 */
+	/**
+	 * 本周（周一至今天，含今天）浏览量 / 访客数。
+	 * 中文习惯以周一为一周的起点。
+	 */
+	function getWeekTotals() {
+		var now = new Date();
+		now.setHours(0, 0, 0, 0);
+		var dow = (now.getDay() + 6) % 7; // 0=周一 … 6=周日
+		var monday = new Date(now.getTime() - dow * 86400000);
+		var dates = [];
+		for (var i = 0; i <= dow; i++) {
+			dates.push(dateStr(new Date(monday.getTime() + i * 86400000)));
+		}
+		return Promise.all(
+			dates.map(function (d) {
+				return Promise.all([get(K.siteDay(d)), get(K.uvDay(d))]).then(function (r) {
+					return {
+						date: d,
+						pv: valueOf(r[0]) || 0,
+						uv: valueOf(r[1]) || 0
+					};
+				});
+			})
+		).then(function (rows) {
+			var pv = 0;
+			var uv = 0;
+			for (var j = 0; j < rows.length; j++) {
+				pv += rows[j].pv;
+				uv += rows[j].uv;
+			}
+			return {
+				pvWeek: pv,
+				uvWeek: uv,
+				weekStart: dates[0],
+				weekEnd: dates[dates.length - 1],
+				days: rows
+			};
+		});
+	}
+
 	function getDaySeries(days, onEach) {
 		var total = clampInt(days, 30, 1, 90);
 		var today = todayStr();
@@ -522,6 +563,7 @@
 		config: CFG,
 		record: boot,
 		getSiteTotals: getSiteTotals,
+		getWeekTotals: getWeekTotals,
 		getDaySeries: getDaySeries,
 		getPostValues: getPostValues,
 		clearCache: clearCache,
