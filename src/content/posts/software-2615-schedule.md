@@ -12,10 +12,6 @@ slug: software-2615-schedule
 comment: true
 ---
 
-这是软件2615 的课表，按**周次**而不是按"固定星期"来看——因为很多课只在特定周次开（比如心理健康只在第 12、15 周上，形势与政策只在第 16-17 周上），光看一张静态周历很容易搞错。
-
-打开页面会自动定位到**本周**，也可以左右翻周或直接下拉选任意一周。灰色的格子是这一周不上的课，带角标的是有调整的课程。**点任意一格**，下面会展开这门课的详情：任课教师、教室、节次时间、上哪些周、本学期一共几周，以及这次调整改了什么（换教室会同时标出原教室）。再点一次或按 × 收起。
-
 <div class="tt-root">
 <style>
 .tt-root{--tt-panel:#fff;--tt-panel2:#f6f8f9;--tt-line:rgba(0,0,0,.09);--tt-tx:#23282e;--tt-tx2:#6a7480;--tt-on-bg:#e4f5f3;--tt-on-bd:#7cc9c0;--tt-on-tx:#12655e;--tt-off-bg:#f2f4f6;--tt-off-tx:#a3abb4;--tt-add-bg:#e8f4e2;--tt-add-bd:#8fc46b;--tt-add-tx:#3f6b1f;--tt-cx-bg:#fdecec;--tt-cx-tx:#a33;--tt-f-room-bg:#fff2d9;--tt-f-room:#b26a00;--tt-f-cx-bg:#fdecec;--tt-f-cx:#b03030;--tt-f-add-bg:#e8f4e2;--tt-f-add:#3f6b1f;--tt-f-mv-bg:#efe9fd;--tt-f-mv:#6a4fc0;--tt-today-bd:#5b8def}
