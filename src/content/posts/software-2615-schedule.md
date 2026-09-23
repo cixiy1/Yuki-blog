@@ -84,7 +84,18 @@ html.dark .tt-root{--tt-panel:#181c1f;--tt-panel2:#20262a;--tt-line:rgba(255,255
 .tt-old{font-style:normal;font-size:11px;opacity:.7;margin-left:4px}
 .tt-dnote{padding:0 12px 10px;font-size:12px;color:var(--tt-tx2);line-height:1.6}
 @media(max-width:640px){.tt-list{display:block}.tt-panel{padding:12px}}
+.tt-notices-panel{margin-bottom:14px}
+.tt-notices{display:flex;flex-direction:column;gap:10px}
+.tt-nt{border-left:3px solid var(--tt-on-bd);background:var(--tt-panel2);border-radius:8px;padding:8px 12px}
+.tt-nt-head{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:2px}
+.tt-nt-date{font-size:11px;color:var(--tt-tx2)}
+.tt-nt-title{font-size:13px;font-weight:500}
+.tt-nt-text{font-size:12px;color:var(--tt-tx);line-height:1.6;white-space:pre-wrap}
 </style>
+<div class="tt-panel tt-notices-panel">
+<div class="tt-top"><span class="tt-title">通知</span><span class="tt-sub">重要安排与提醒</span></div>
+<div id="tt-notices" class="tt-notices"></div>
+</div>
 <div class="tt-panel">
 <div class="tt-top"><span class="tt-title">软件2615 课表</span><span class="tt-sub">北校区 · 2026-2027 学年第 1 学期</span></div>
 <div class="tt-bar">

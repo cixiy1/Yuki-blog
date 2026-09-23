@@ -318,6 +318,22 @@
 		}).join("");
 	}
 
+	function renderNotices() {
+		var box = document.getElementById("tt-notices");
+		if (!box) return;
+		var panel = box.closest ? box.closest(".tt-notices-panel") : null;
+		var arr = (DATA.notices || []).slice();
+		if (!arr.length) { if (panel) panel.style.display = "none"; box.innerHTML = ""; return; }
+		if (panel) panel.style.display = "";
+		box.innerHTML = arr.map(function (n) {
+			var date = n.date ? '<span class="tt-nt-date">' + esc(n.date) + "</span>" : "";
+			var title = n.title ? '<span class="tt-nt-title">' + esc(n.title) + "</span>" : "";
+			var text = n.text ? '<div class="tt-nt-text">' + esc(n.text) + "</div>" : "";
+			var head = (date || title) ? '<div class="tt-nt-head">' + date + title + "</div>" : "";
+			return '<div class="tt-nt">' + head + text + "</div>";
+		}).join("");
+	}
+
 	function setWeek(w) {
 		var max = DATA.meta.totalWeeks || 19;
 		if (w < 1) w = 1;
@@ -372,6 +388,7 @@
 				});
 			}
 			renderPeriods();
+			renderNotices();
 			setWeek(realWeek >= 1 ? realWeek : 1);
 			var meta = document.getElementById("tt-meta");
 			if (meta) {
