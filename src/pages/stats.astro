@@ -16,50 +16,50 @@ const posts = enabled ? await getStatsPostList() : [];
   <div class="flex w-full rounded-(--radius-large) overflow-hidden relative mb-4">
     <div
       id="stats-root"
-      class="card-base z-10 px-6 md:px-9 pt-6 pb-8 relative w-full"
+      class="card-base z-10 px-6 md:px-9 pt-6 pb-8 relative w-full text-black/90 dark:text-white/90"
       data-trend-days={pageCfg.trendDays}
       data-top-n={pageCfg.topN}
     >
       {
         !enabled ? (
-          <p class="sp-empty">站内统计未启用。</p>
+          <p class="sp-empty text-black/70 dark:text-white/60">站内统计未启用。</p>
         ) : (
           <>
             <div class="sp-head">
               {/* 大屏由 banner 统一显示页面标题，这里只在窄屏补一个 */}
               <h1 class="sp-title lg:hidden">{pageCfg.title}</h1>
-              <p class="sp-desc">{pageCfg.description}</p>
+              <p class="sp-desc text-black/70 dark:text-white/60">{pageCfg.description}</p>
             </div>
 
             {/* 概览 */}
             <div class="sp-cards">
               <div class="sp-card">
-                <div class="sp-card-label">总浏览量</div>
+                <div class="sp-card-label text-black/70 dark:text-white/60">总浏览量</div>
                 <div class="sp-card-value" data-stat="pv">
                   —
                 </div>
-                <div class="sp-card-sub">建站至今</div>
+                <div class="sp-card-sub text-black/70 dark:text-white/60">建站至今</div>
               </div>
               <div class="sp-card">
-                <div class="sp-card-label">总访客数</div>
+                <div class="sp-card-label text-black/70 dark:text-white/60">总访客数</div>
                 <div class="sp-card-value" data-stat="uv">
                   —
                 </div>
-                <div class="sp-card-sub">浏览器去重</div>
+                <div class="sp-card-sub text-black/70 dark:text-white/60">浏览器去重</div>
               </div>
               <div class="sp-card">
-                <div class="sp-card-label">今日浏览</div>
+                <div class="sp-card-label text-black/70 dark:text-white/60">今日浏览</div>
                 <div class="sp-card-value" data-stat="pvToday">
                   —
                 </div>
-                <div class="sp-card-sub">截至现在</div>
+                <div class="sp-card-sub text-black/70 dark:text-white/60">截至现在</div>
               </div>
               <div class="sp-card">
-                <div class="sp-card-label">今日访客</div>
+                <div class="sp-card-label text-black/70 dark:text-white/60">今日访客</div>
                 <div class="sp-card-value" data-stat="uvToday">
                   —
                 </div>
-                <div class="sp-card-sub">截至现在</div>
+                <div class="sp-card-sub text-black/70 dark:text-white/60">截至现在</div>
               </div>
             </div>
 
@@ -67,12 +67,12 @@ const posts = enabled ? await getStatsPostList() : [];
             <section class="sp-section">
               <div class="sp-section-head">
                 <h2 class="sp-section-title">近 {pageCfg.trendDays} 天浏览量</h2>
-                <div class="sp-section-extra">
+                <div class="sp-section-extra text-black/70 dark:text-white/60">
                   日均 <b data-stat="avg">—</b> 次
                 </div>
               </div>
               <div id="stats-trend" class="sp-trend">
-                <p class="sp-empty">正在读取…</p>
+                <p class="sp-empty text-black/70 dark:text-white/60">正在读取…</p>
               </div>
             </section>
 
@@ -80,14 +80,14 @@ const posts = enabled ? await getStatsPostList() : [];
             <section class="sp-section">
               <div class="sp-section-head">
                 <h2 class="sp-section-title">文章阅读排行</h2>
-                <div class="sp-section-extra">
+                <div class="sp-section-extra text-black/70 dark:text-white/60">
                   累计 <b data-stat="total">—</b> 次
                 </div>
               </div>
               <div id="stats-rank" class="sp-rank">
                 {
                   posts.length === 0 ? (
-                    <p class="sp-empty">没有可统计的文章。</p>
+                    <p class="sp-empty text-black/70 dark:text-white/60">没有可统计的文章。</p>
                   ) : (
                     posts.map((post, index) => (
                       <a
@@ -100,7 +100,7 @@ const posts = enabled ? await getStatsPostList() : [];
                         <span class="sp-rank-no">{index + 1}</span>
                         <span class="sp-rank-main">
                           <span class="sp-rank-title">{post.title}</span>
-                          <span class="sp-rank-meta">
+                          <span class="sp-rank-meta text-black/70 dark:text-white/60">
                             {post.published}
                             {post.category ? ` · ${post.category}` : ""}
                           </span>
@@ -118,7 +118,7 @@ const posts = enabled ? await getStatsPostList() : [];
               </div>
               <button
                 id="stats-rank-toggle"
-                class="sp-btn sp-btn-block"
+                class="btn-plain w-full mt-3"
                 type="button"
                 hidden
               >
@@ -126,10 +126,10 @@ const posts = enabled ? await getStatsPostList() : [];
               </button>
             </section>
 
-            <p id="stats-status" class="sp-status" aria-live="polite">
+            <p id="stats-status" class="sp-status text-black/70 dark:text-white/60" aria-live="polite">
               正在读取数据…
             </p>
-            <p class="sp-note">
+            <p class="sp-note text-black/70 dark:text-white/60">
               统计由站内计数器在浏览器端完成，不使用 Cookie 追踪，只记录「页面被访问了几次」。
               加密文章不参与排行；同一页面 {statsConfig.dedupeMinutes} 分钟内的重复访问只计一次。
               更细致的来源、设备与行为分析见站长的 Microsoft Clarity 后台。
@@ -142,9 +142,14 @@ const posts = enabled ? await getStatsPostList() : [];
 </MainGridLayout>
 
 <style is:global>
-  /* 说明：颜色尽量复用主题变量，自动跟随浅色 / 深色与主题色相。
-     排行行由 Astro 服务端渲染（好让无 JS 时也能看到文章清单），
-     但柱状图是 stats-page.js 运行时插入的，所以这里统一用全局样式。 */
+  /* 本页只复用主题既有变量与组件语言（--primary / --content-meta /
+     --license-block-bg / --line-divider / card-base / btn-plain 等），
+     不引入任何主题之外的颜色或组件风格。
+     - 文字颜色交给主题工具类：text-black/90 dark:text-white/90（主）、
+       text-black/70 dark:text-white/60（次），自动跟随主题明暗；
+     - 强调色统一用 --primary，跟随主题色相（hue）与明暗；
+     - 柱状图是 stats-page.js 运行时插入的 DOM，无法用模板类，故用全局
+       样式引用主题变量上色。 */
   .sp-head {
     margin-bottom: 1.5rem;
   }
@@ -159,72 +164,6 @@ const posts = enabled ? await getStatsPostList() : [];
   .sp-desc {
     margin: 0;
     font-size: 0.85rem;
-    color: var(--content-meta);
-  }
-
-  /* 按钮：浅绿淡底 + 浅绿描边 + 浅绿字，hover 加深，
-     和主题按钮同一套语言，只是换成统计页专用浅绿 --sp-accent */
-  .sp-btn {
-    flex: 0 0 auto;
-    padding: 0.4rem 0.9rem;
-    font-size: 0.8rem;
-    font-weight: 600;
-    background: color-mix(in oklab, var(--sp-accent) 12%, transparent);
-    border: 1px solid color-mix(in oklab, var(--sp-accent) 30%, transparent);
-    border-radius: 0.6rem;
-    color: var(--sp-accent);
-    cursor: pointer;
-    transition:
-      background 0.2s ease,
-      transform 0.2s ease;
-  }
-
-  .sp-btn:hover {
-    background: color-mix(in oklab, var(--sp-accent) 20%, transparent);
-  }
-
-  .sp-btn:active {
-    transform: scale(0.97);
-  }
-
-  .sp-btn-block {
-    display: block;
-    width: 100%;
-    margin-top: 0.75rem;
-  }
-
-  /* 统计页专用「浅绿」强调色。
-     站点主色 --primary 是 hue180 的青绿色，用户要的是浅绿色，
-     所以这里单独定义一套浅绿（而非复用 --primary）。
-     亮色 / 深色模式分别取值，自动跟随主题明暗。 */
-  :root {
-    --sp-accent: #2bb673;
-  }
-  :root.dark {
-    --sp-accent: #5ad69c;
-  }
-
-  /* ⚠️ 不要依赖「继承」拿文字颜色。
-     主题只在它自己的组件里用 text-black/90 dark:text-white/90 这类工具类显式上色，
-     body 上并没有一个会在深色模式翻白的默认字色。自定义样式如果不上色，
-     深色模式下就会拿到 rgb(0,0,0) ——黑字压在深色卡片上直接看不见。
-     下面这组选择器覆盖所有「非 .sp-* 已显式上色」的正文元素。 */
-  /* 仅对「正文可读文字」做强色兜底（浅色黑字 / 深色浅字），跟随主题明暗。
-     - 主规则用 light-dark() 按 color-scheme 切换，覆盖「系统跟随」这类没挂 .dark class 的情况；
-     - 下方 :root.dark 规则按主题 .dark class 兜底（深色下取值一致，互不冲突）。
-     主题正文翻白本就是 black/90 → white/90 这一套。 */
-  .sp-title,
-  .sp-card-value,
-  .sp-section-title,
-  .sp-rank-title {
-    color: light-dark(rgb(0 0 0 / 0.9), rgb(255 255 255 / 0.9));
-  }
-
-  :root.dark .sp-title,
-  :root.dark .sp-card-value,
-  :root.dark .sp-section-title,
-  :root.dark .sp-rank-title {
-    color: rgb(255 255 255 / 0.9);
   }
 
   /* 概览卡片 */
@@ -242,7 +181,6 @@ const posts = enabled ? await getStatsPostList() : [];
 
   .sp-card-label {
     font-size: 0.75rem;
-    color: var(--content-meta);
   }
 
   .sp-card-value {
@@ -255,7 +193,6 @@ const posts = enabled ? await getStatsPostList() : [];
 
   .sp-card-sub {
     font-size: 0.68rem;
-    color: var(--content-meta);
   }
 
   /* 区块 */
@@ -281,12 +218,12 @@ const posts = enabled ? await getStatsPostList() : [];
 
   .sp-section-extra {
     font-size: 0.78rem;
-    color: var(--content-meta);
     white-space: nowrap;
   }
 
+  /* 累计 / 日均数字沿用主题强调色 */
   .sp-section-extra b {
-    color: var(--sp-accent);
+    color: var(--primary);
   }
 
   /* 趋势图 */
@@ -312,15 +249,13 @@ const posts = enabled ? await getStatsPostList() : [];
     justify-content: center;
   }
 
-  /* 柱子一律用统计页浅绿 --sp-accent ——
-     不做透明弱化、更不要给「今天」换成灰色（--content-meta）之类的中性色，
-     否则图表里会冒出一块不和谐的色块。
-     「今天」用刻度文字（浅绿 + 加粗）区分，而不是换颜色。 */
+  /* 柱子一律用主题强调色 --primary（与主题 bg-(--primary) 徽章同色），
+     不给「今天」换灰色，只用刻度文字（主题色 + 加粗）区分。 */
   .sp-bar {
     width: 100%;
     min-height: 2px;
     border-radius: 4px 4px 2px 2px;
-    background: var(--sp-accent);
+    background: var(--primary);
     animation: sp-grow 0.5s ease both;
   }
 
@@ -337,7 +272,7 @@ const posts = enabled ? await getStatsPostList() : [];
   }
 
   .sp-bar-wrap.is-today .sp-bar-label {
-    color: var(--sp-accent);
+    color: var(--primary);
     font-weight: 600;
   }
 
@@ -361,17 +296,17 @@ const posts = enabled ? await getStatsPostList() : [];
   }
 
   .sp-rank-row:hover {
-    background: color-mix(in oklab, var(--sp-accent) 8%, transparent);
+    background: color-mix(in oklab, var(--primary) 8%, transparent);
   }
 
-  /* 第一名（且有阅读量）：绿色「选中」态，呼应主题强调色与选中效果 */
+  /* 第一名（且有阅读量）：主题强调色「选中」态，呼应主题选中效果 */
   .sp-rank-row.is-top {
-    background: color-mix(in oklab, var(--sp-accent) 12%, transparent);
-    box-shadow: inset 3px 0 0 0 var(--sp-accent);
+    background: color-mix(in oklab, var(--primary) 12%, transparent);
+    box-shadow: inset 3px 0 0 0 var(--primary);
   }
 
   .sp-rank-row.is-top:hover {
-    background: color-mix(in oklab, var(--sp-accent) 18%, transparent);
+    background: color-mix(in oklab, var(--primary) 18%, transparent);
   }
 
   .sp-rank-no {
@@ -380,7 +315,7 @@ const posts = enabled ? await getStatsPostList() : [];
     text-align: center;
     font-weight: 700;
     font-variant-numeric: tabular-nums;
-    color: var(--sp-accent);
+    color: var(--primary);
   }
 
   .sp-rank-main {
@@ -400,14 +335,13 @@ const posts = enabled ? await getStatsPostList() : [];
 
   .sp-rank-meta {
     font-size: 0.7rem;
-    color: var(--content-meta);
   }
 
   .sp-rank-track {
     display: block;
     height: 0.3rem;
     border-radius: 999px;
-    background: color-mix(in oklab, var(--sp-accent) 12%, transparent);
+    background: color-mix(in oklab, var(--primary) 12%, transparent);
     overflow: hidden;
   }
 
@@ -416,7 +350,7 @@ const posts = enabled ? await getStatsPostList() : [];
     height: 100%;
     width: 0;
     border-radius: 999px;
-    background: var(--sp-accent);
+    background: var(--primary);
     transition: width 0.6s ease;
   }
 
@@ -426,17 +360,16 @@ const posts = enabled ? await getStatsPostList() : [];
     text-align: right;
     font-weight: 700;
     font-variant-numeric: tabular-nums;
-    color: var(--sp-accent);
+    color: var(--primary);
   }
 
   /* 状态与说明 */
   .sp-status {
     margin: 1.5rem 0 0;
     font-size: 0.75rem;
-    color: var(--content-meta);
   }
 
-  /* 报错色也取主题里已经定义好的告警色，不引入自成一派的红 */
+  /* 报错色取主题已定义的告警色 */
   .sp-status[data-kind="error"] {
     color: var(--admonitions-color-caution);
   }
@@ -445,14 +378,12 @@ const posts = enabled ? await getStatsPostList() : [];
     margin: 0.5rem 0 0;
     font-size: 0.72rem;
     line-height: 1.5;
-    color: var(--content-meta);
   }
 
   .sp-empty {
     margin: 0;
     padding: 1rem 0;
     font-size: 0.85rem;
-    color: var(--content-meta);
   }
 
   @keyframes sp-grow {
