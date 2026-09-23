@@ -228,7 +228,9 @@
 				var cls = "tt-cell " + (cell.cancelled ? "is-cancel" : cell.active ? (cell.temp ? "is-add" : "is-on") : "is-off");
 				var flag = "";
 				if (cell.changes.length) {
-					var t = cell.changes[0].t;
+					/* 停课优先：一门课可能既有长期「改地点」又有本周「停课」，
+					   若只取 changes[0] 会把停课的格子标成「改地点」，误导学生。 */
+					var t = cell.cancelled ? "cancel" : cell.changes[0].t;
 					var lb = t === "room" ? "改地点" : t === "move" ? "调课" : t === "cancel" ? "停课" : t === "add" ? "新增" : "对调";
 					flag = '<u class="tt-flag f-' + t + '">' + lb + "</u>";
 				} else if (!cell.active && !cell.cancelled) {
