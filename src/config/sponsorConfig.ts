@@ -19,7 +19,8 @@ export const sponsorConfig: SponsorConfig = {
 	],
 	sponsors: [
 		{
-			name: "苏志锦（校友）"
+			name: "苏志锦（校友）",
+			avatar: "/assets/images/sponsor/suzhijin.jpg"
 		}
 	]
 };
