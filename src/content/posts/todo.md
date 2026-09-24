@@ -1,6 +1,7 @@
 ---
 title: 待办清单
 published: 2026-09-24
+pinned: true
 description: 个人待办事项记录。当前待办：写一篇个人介绍。
 tags:
   - 待办
@@ -9,6 +10,6 @@ slug: todo
 comment: true
 ---
 
-## 待办事项
+这里记录我近期打算完成的小事，勾掉一项就少一项。勾选状态会保存在你自己的浏览器里，刷新不丢。
 
-- [ ] 写一篇个人介绍
+<div class="todo-root"><style>.todo-root{--td-r:var(--radius-large);margin:1.4rem 0;font-family:inherit;color:var(--content-meta)}.todo-card{background:var(--card-bg);border:1px solid var(--line-divider);border-radius:var(--td-r);padding:1.5rem 1.6rem 1.7rem;box-shadow:0 1px 2px rgba(0,0,0,.04)}.todo-head{display:flex;align-items:baseline;justify-content:space-between;gap:1rem;margin-bottom:1.1rem;flex-wrap:wrap}.todo-title{font-size:1.3rem;font-weight:700;color:var(--primary);margin:0}.todo-count{font-size:.8rem;color:var(--content-meta)}.todo-progress{height:.55rem;border-radius:999px;background:color-mix(in oklab,var(--primary) 14%,transparent);overflow:hidden;margin-bottom:1.25rem}.todo-progress>i{display:block;height:100%;width:0;background:var(--primary);border-radius:999px;transition:width .5s ease}.todo-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:.5rem}.todo-item{position:relative;display:flex;align-items:center;gap:.75rem;padding:.7rem .85rem;border-radius:.7rem;cursor:pointer;transition:background .15s ease}.todo-item:hover{background:color-mix(in oklab,var(--primary) 8%,transparent)}.todo-check{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}.todo-box{flex:0 0 auto;width:1.3rem;height:1.3rem;border-radius:50%;border:2px solid color-mix(in oklab,var(--primary) 50%,transparent);display:flex;align-items:center;justify-content:center;transition:background .2s ease,border-color .2s ease}.todo-box::after{content:"";width:.62rem;height:.32rem;border-left:2px solid #fff;border-bottom:2px solid #fff;transform:rotate(-45deg) scale(0);transform-origin:center;transition:transform .2s ease;margin-top:-.1rem}.todo-check:checked~.todo-box{background:var(--primary);border-color:var(--primary)}.todo-check:checked~.todo-box::after{transform:rotate(-45deg) scale(1)}.todo-check:focus-visible~.todo-box{outline:2px solid var(--primary);outline-offset:2px}.todo-text{font-size:1rem;color:var(--content-meta);transition:color .2s ease}.todo-check:checked~.todo-text{color:color-mix(in oklab,var(--content-meta) 50%,transparent);text-decoration:line-through}.todo-done-note{margin:1.1rem 0 0;font-size:.85rem;color:var(--primary);text-align:center;opacity:0;transform:translateY(4px);transition:opacity .3s ease,transform .3s ease}.todo-done-note.show{opacity:1;transform:none}</style><div class="todo-card"><div class="todo-head"><h2 class="todo-title">待办清单</h2><span class="todo-count" data-todo-count>0 / 0 已完成</span></div><div class="todo-progress"><i data-todo-bar></i></div><ul class="todo-list"><li><label class="todo-item"><input type="checkbox" class="todo-check" data-todo-id="intro"><span class="todo-box"></span><span class="todo-text">写一篇个人介绍</span></label></li></ul><p class="todo-done-note" data-todo-note>全部完成，辛苦啦！</p></div><script src="/assets/js/todo-widget.js"></script></div>
