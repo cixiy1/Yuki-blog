@@ -93,6 +93,7 @@ html.dark .tt-root{--tt-panel:#181c1f;--tt-panel2:#20262a;--tt-line:rgba(255,255
 .tt-nt-date{font-size:11px;color:var(--tt-tx2)}
 .tt-nt-title{font-size:13px;font-weight:500}
 .tt-nt-text{font-size:12px;color:var(--tt-tx);line-height:1.6;white-space:pre-wrap}
+.tt-nt-none{color:var(--tt-tx2);opacity:.8;font-size:12px}
 </style>
 <div class="tt-panel tt-notices-panel">
 <div class="tt-top"><span class="tt-title">通知</span><span class="tt-sub">重要安排与提醒</span></div>

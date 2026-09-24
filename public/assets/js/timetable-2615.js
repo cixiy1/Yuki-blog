@@ -352,10 +352,8 @@
 	function renderNotices() {
 		var box = document.getElementById("tt-notices");
 		if (!box) return;
-		var panel = box.closest ? box.closest(".tt-notices-panel") : null;
 		var arr = (DATA.notices || []).slice();
-		if (!arr.length) { if (panel) panel.style.display = "none"; box.innerHTML = ""; return; }
-		if (panel) panel.style.display = "";
+		if (!arr.length) { box.innerHTML = '<div class="tt-nt tt-nt-none">无</div>'; return; }
 		box.innerHTML = arr.map(function (n) {
 			var date = n.date ? '<span class="tt-nt-date">' + esc(n.date) + "</span>" : "";
 			var title = n.title ? '<span class="tt-nt-title">' + esc(n.title) + "</span>" : "";
