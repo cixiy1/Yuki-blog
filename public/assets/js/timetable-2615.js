@@ -132,8 +132,9 @@
 		}
 		});
 		/* 晚自习：晚上没正课时默认安排（19:00–20:30）。
-		   规则：周一~周五的 9-10 节，若当天该节无任何 active 正课（含临时新增），
-		   且该周有教学安排（排除整周放假 / 非教学周 offWeeks），则注入晚自习。 */
+		   规则：周一~周五的 9-10 节，若当天该节「本来没排过课」（既无生效正课、也无停课/调课等原计划占用），
+		   且该周有教学安排（排除整周放假 / 非教学周 offWeeks），则注入晚自习。
+		   注意：原来有课、后来停课（cancel）的晚上不算"没课"——学生本就不必到课，也不另行安排晚自习。 */
 		var ss = DATA.meta.selfStudy;
 		if (ss && ss.enabled) {
 			var off = ss.offWeeks || [];
@@ -145,7 +146,8 @@
 					var offDay = offDays.some(function (p) { return p[0] === w && p[1] === d; });
 					if (offDay) return;
 					var occupied = entries.some(function (e) {
-						return e.day === d && e.slot === ss.slot && e.active;
+						return e.day === d && e.slot === ss.slot && !e.selfStudy &&
+							(e.active || e.cancelled);
 					});
 					if (!occupied) {
 						entries.push({
