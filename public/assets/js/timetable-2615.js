@@ -352,7 +352,12 @@
 	function renderNotices() {
 		var box = document.getElementById("tt-notices");
 		if (!box) return;
-		var arr = (DATA.notices || []).slice();
+		/* 按「真实当前周次」过滤：带 weeks 的通知只在对应周显示，过期自动消失；
+		   不带 weeks 的通知常驻。避免日期特定事件（如返校）一直挂到学期末。 */
+		var arr = (DATA.notices || []).filter(function (n) {
+			if (!n.weeks) return true;
+			return parseWeeks(n.weeks).indexOf(realWeek) >= 0;
+		});
 		if (!arr.length) { box.innerHTML = '<div class="tt-nt tt-nt-none">无</div>'; return; }
 		box.innerHTML = arr.map(function (n) {
 			var date = n.date ? '<span class="tt-nt-date">' + esc(n.date) + "</span>" : "";
