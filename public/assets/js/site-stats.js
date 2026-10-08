@@ -286,7 +286,10 @@
 	 * 右侧栏（position=both/right）与左侧栏用静态容器承载，**不被 Swup 替换**：
 	 * 站内跳转后 DOM 仍是首屏那一份，侧栏「本文统计」的 data-stats-id 会停留在
 	 * 最初硬加载的文章上——这正是「卡片不随打开文章刷新、每篇都显示同一个数」的根因。
-	 * 这里以正文的 id 为准反向纠正，并清空旧值等待重新填充。
+	 * 这里以正文的 id 为准反向纠正 id 即可——**绝不能顺手 display:none / 清空**：
+	 * 统计服务不稳定时重新取值常会失败，而 setBadge 是唯一会恢复显示的地方，
+	 * 一旦在这里先隐藏，取值失败就没人再显示它，卡片会直接消失（回归 bug）。
+	 * 只改 id：取值成功 → setBadge 覆盖成新值；取值失败 → 仍显示旧值（可见，不消失）。
 	 */
 	function syncStaticSidebarBadges() {
 		var id = currentArticleId();
@@ -297,10 +300,6 @@
 			for (var i = 0; i < nodes.length; i++) {
 				if (nodes[i].getAttribute("data-stats-id") !== id) {
 					nodes[i].setAttribute("data-stats-id", id);
-					var slot = nodes[i].querySelector("[data-post-stats-value]");
-					if (slot) slot.textContent = "—";
-					nodes[i].style.display = "none";
-					nodes[i].removeAttribute("data-loaded");
 				}
 			}
 		}
