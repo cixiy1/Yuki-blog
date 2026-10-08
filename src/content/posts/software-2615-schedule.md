@@ -42,6 +42,7 @@ html.dark .tt-root{--tt-panel:#181c1f;--tt-panel2:#20262a;--tt-line:rgba(255,255
 .tt-cell{position:relative;min-height:54px;border-radius:9px;padding:7px 8px;border:1px solid transparent;display:flex;flex-direction:column;justify-content:center}
 .tt-cell b{font-weight:500;font-size:13px}
 .tt-cell span{font-size:11px;margin-top:2px;opacity:.85;word-break:break-all}
+.tt-time{margin-top:3px;opacity:.7;font-variant-numeric:tabular-nums;letter-spacing:.2px}
 .is-on{background:var(--tt-on-bg);border-color:var(--tt-on-bd);color:var(--tt-on-tx)}
 .is-off{background:var(--tt-off-bg);color:var(--tt-off-tx)}
 .is-add{background:var(--tt-add-bg);border-color:var(--tt-add-bd);color:var(--tt-add-tx)}

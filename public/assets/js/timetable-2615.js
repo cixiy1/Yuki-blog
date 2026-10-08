@@ -279,12 +279,15 @@
 				var tt = (cell.selfStudy && cell.endTime) ? (cell.startTime + "–" + cell.endTime) : (st.time || "");
 				var tip = cell.name + (cell.teacher ? " · " + cell.teacher : "") +
 					(cell.room ? " · " + cell.room : "") + " · " + DAYS[d - 1] + " " + (st.label || sk) + " " + tt;
+				/* 当本格实际时间（如晚自习被覆盖为 21:00）与节次行首默认时间（9-10节 19:00–20:30）不一致时，
+				   在格内额外显示真实时间，避免只看行首误以为 20:30 结束。 */
+				var timeBadge = (tt && tt !== st.time) ? '<span class="tt-time">' + esc(tt) + "</span>" : "";
 				html += '<div class="' + cls + (isNow && d === todayIdx ? " is-today" : "") +
 					(cell.id === selId ? " is-sel" : "") +
 					'" data-id="' + esc(cell.id) + '" tabindex="0" role="button"' +
 					' aria-label="' + esc(cell.name + " 详情") + '" title="' + esc(tip) + '"><b>' +
 					esc(cell.short) + "</b>" +
-					(cell.room ? "<span>" + esc(cell.room) + "</span>" : "") + flag + "</div>";
+					(cell.room ? "<span>" + esc(cell.room) + "</span>" : "") + timeBadge + flag + "</div>";
 			}
 			html += "</div>";
 		});
