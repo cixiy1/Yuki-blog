@@ -267,6 +267,45 @@
 		return out;
 	}
 
+	/**
+	 * 当前正文文章的统计 id。
+	 *
+	 * 正文区（#swup-container 内）每次站内跳转都会被 Swup 换成新文章的 HTML，
+	 * 其中的 [data-post-stats] 徽章携带的是当前文章 id，可作为「当前文章」的权威来源。
+	 */
+	function currentArticleId() {
+		var el = document.querySelector(
+			"#swup-container [data-post-stats][data-stats-id], #content-wrapper [data-post-stats][data-stats-id]",
+		);
+		return el ? el.getAttribute("data-stats-id") : null;
+	}
+
+	/**
+	 * 同步「静态侧栏」里统计徽章的 data-stats-id。
+	 *
+	 * 右侧栏（position=both/right）与左侧栏用静态容器承载，**不被 Swup 替换**：
+	 * 站内跳转后 DOM 仍是首屏那一份，侧栏「本文统计」的 data-stats-id 会停留在
+	 * 最初硬加载的文章上——这正是「卡片不随打开文章刷新、每篇都显示同一个数」的根因。
+	 * 这里以正文的 id 为准反向纠正，并清空旧值等待重新填充。
+	 */
+	function syncStaticSidebarBadges() {
+		var id = currentArticleId();
+		if (!id) return;
+		var wraps = document.querySelectorAll("#right-sidebar-static, #left-sidebar-wrapper");
+		for (var w = 0; w < wraps.length; w++) {
+			var nodes = wraps[w].querySelectorAll("[data-post-stats][data-stats-id]");
+			for (var i = 0; i < nodes.length; i++) {
+				if (nodes[i].getAttribute("data-stats-id") !== id) {
+					nodes[i].setAttribute("data-stats-id", id);
+					var slot = nodes[i].querySelector("[data-post-stats-value]");
+					if (slot) slot.textContent = "—";
+					nodes[i].style.display = "none";
+					nodes[i].removeAttribute("data-loaded");
+				}
+			}
+		}
+	}
+
 	/* ------------------------------------------------------------------ */
 	/* 阅读量展示                                                           */
 	/* ------------------------------------------------------------------ */
@@ -328,6 +367,8 @@
 	}
 
 	function record() {
+		// 先纠正静态侧栏的徽章 id（Swup 跳转后侧栏 DOM 不被替换，会残留上一篇的 id）
+		syncStaticSidebarBadges();
 		var ids = postIdsOnPage();
 
 		if (!canCount()) return finishBadges(ids, null);
@@ -587,8 +628,28 @@
 		boot();
 	}
 
-	// Swup 站内跳转后重新记录（内部有去重保护）
-	document.addEventListener("astro:page-load", function () {
+	// 站内跳转后重新记录并刷新徽章。
+	// ⚠️ 本站用 Swup 做站内跳转：其导航事件是 swup:* / window.swup.hooks，
+	//    并**不会**触发 astro:page-load（那是 Astro 视图过渡的事件）。
+	//    而侧栏是静态容器、站内跳转后 DOM 不被替换，因此必须监听 Swup 事件手动重跑，
+	//    否则「本文统计」会一直停在首屏那篇文章的阅读量（每篇显示同一个数）。
+	var lastNavAt = 0;
+	function onNavigate() {
+		var now = Date.now();
+		if (now - lastNavAt < 300) return; // 一轮导航常同时命中多个事件，去抖
+		lastNavAt = now;
 		setTimeout(boot, 0);
+	}
+
+	document.addEventListener("astro:page-load", onNavigate); // 兼容视图过渡
+	document.addEventListener("swup:contentReplaced", onNavigate);
+	document.addEventListener("swup:content:replace", onNavigate);
+	document.addEventListener("swup:page:view", onNavigate);
+	window.addEventListener("popstate", function () {
+		setTimeout(boot, 60);
 	});
+	if (window.swup && window.swup.hooks && typeof window.swup.hooks.on === "function") {
+		window.swup.hooks.on("content:replace", onNavigate);
+		window.swup.hooks.on("page:view", onNavigate);
+	}
 })();
