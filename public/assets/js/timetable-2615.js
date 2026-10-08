@@ -131,7 +131,9 @@
 			e.changes.push({ t: "move", note: ov.note || "", old: oldPos });
 		}
 		});
-		/* 晚自习：晚上没正课时默认安排（19:00–20:30）。
+		/* 晚自习：晚上没正课时默认安排（默认 19:00–20:30）。
+		   可按「周-星期」用 meta.selfStudy.cellOverrides 覆盖某次晚自习的教室/结束时间
+		   （如 {"6-5":{"room":"修德楼218","end":"21:00"}} 表示第 6 周周五），不影响其它周默认。
 		   规则：周一~周五的 9-10 节，若当天该节「本来没排过课」（既无生效正课、也无停课/调课等原计划占用），
 		   且该周有教学安排（排除整周放假 / 非教学周 offWeeks），则注入晚自习。
 		   注意：原来有课、后来停课（cancel）的晚上不算"没课"——学生本就不必到课，也不另行安排晚自习。 */
@@ -150,12 +152,14 @@
 							(e.active || e.cancelled);
 					});
 					if (!occupied) {
+						var co = (ss.cellOverrides && ss.cellOverrides[w + "-" + d]) || null;
 						entries.push({
 							id: "selfstudy-d" + d, day: d, slot: ss.slot,
 							name: ss.name || "晚自习", short: ss.short || ss.name || "晚自习",
-							room: "", teacher: "", weeks: String(w),
+							room: (co && co.room) || "", teacher: "", weeks: String(w),
 							active: true, cancelled: false, temp: false,
-							selfStudy: true, changes: []
+							selfStudy: true, changes: [],
+							startTime: ss.start || "19:00", endTime: (co && co.end) || ss.end || ""
 						});
 					}
 				});
@@ -189,9 +193,14 @@
 			if (c.t === "move" && c.old) { oldPos = c.old; oldRoom = c.old.room || oldRoom; }
 		});
 		var state = e.selfStudy ? "晚自习（默认安排）" : e.cancelled ? "本周停课" : e.active ? (e.temp ? "临时安排" : "本周有课") : "本周不上";
-		var timeTxt = SLOTS.indexOf(e.slot) < 0
-			? (st.time || e.slot)
-			: (st.label || e.slot) + " " + (st.time || "");
+		var timeTxt;
+		if (e.selfStudy && e.endTime) {
+			timeTxt = (st.label || e.slot) + " " + (e.startTime || "19:00") + "–" + e.endTime;
+		} else {
+			timeTxt = SLOTS.indexOf(e.slot) < 0
+				? (st.time || e.slot)
+				: (st.label || e.slot) + " " + (st.time || "");
+		}
 		var rows = [
 			["任课教师", esc(e.teacher || "—")],
 			["上课地点", esc(e.room || "—") +
@@ -267,8 +276,9 @@
 				} else if (!cell.active && !cell.cancelled) {
 					flag = '<u class="tt-flag f-off">非本周</u>';
 				}
+				var tt = (cell.selfStudy && cell.endTime) ? (cell.startTime + "–" + cell.endTime) : (st.time || "");
 				var tip = cell.name + (cell.teacher ? " · " + cell.teacher : "") +
-					(cell.room ? " · " + cell.room : "") + " · " + DAYS[d - 1] + " " + (st.label || sk) + " " + (st.time || "");
+					(cell.room ? " · " + cell.room : "") + " · " + DAYS[d - 1] + " " + (st.label || sk) + " " + tt;
 				html += '<div class="' + cls + (isNow && d === todayIdx ? " is-today" : "") +
 					(cell.id === selId ? " is-sel" : "") +
 					'" data-id="' + esc(cell.id) + '" tabindex="0" role="button"' +
