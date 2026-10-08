@@ -159,20 +159,17 @@
 							room: (co && co.room) || "", teacher: "", weeks: String(w),
 							active: true, cancelled: false, temp: false,
 							selfStudy: true, changes: [],
-							startTime: ss.start || "19:00", endTime: ss.end || "20:30"
+							startTime: ss.start || "19:00", endTime: "20:30"
 						});
-					/* 若本次晚自习被覆盖延长到 21:00（如 W6 周五），在「第十一节」行额外放一格 20:30–end，
-					   与 9-10 节那格拼成完整晚自习，避免把 21:00 混在 9-10 行里看不清。 */
-					if (co && co.end && co.end !== (ss.end || "20:30")) {
 						entries.push({
 							id: "selfstudy-d" + d + "-11", day: d, slot: "11",
 							name: ss.name || "晚自习", short: ss.short || ss.name || "晚自习",
 							room: (co && co.room) || "", teacher: "", weeks: String(w),
 							active: true, cancelled: false, temp: false,
 							selfStudy: true, changes: [],
-							startTime: "20:30", endTime: co.end
+							startTime: "20:30", endTime: (co && co.end) || ss.end || "21:00"
 						});
-					}
+
 					}
 				});
 				}
