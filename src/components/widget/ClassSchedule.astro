@@ -1,0 +1,574 @@
+---
+# ClassSchedule.astro —— 软件2615 动态课表（Firefly 官方组件）
+# 把原先散落在 software-2615-schedule.md 内的「内嵌 HTML + 外置 timetable-2615.js」封装为正式组件。
+# 样式用 <style is:global>（格子由脚本 innerHTML 生成，Astro scoped 匹配不到动态节点）；
+# 逻辑用 <script is:inline> + astro:page-load 重初始化（对齐博客内 todo-widget 的已验证模式）。
+---
+<div class="tt-root">
+  <style is:global>
+    .tt-root{--tt-panel:#fff;--tt-panel2:#f6f8f9;--tt-line:rgba(0,0,0,.09);--tt-tx:#23282e;--tt-tx2:#6a7480;--tt-on-bg:#e4f5f3;--tt-on-bd:#7cc9c0;--tt-on-tx:#12655e;--tt-off-bg:#f2f4f6;--tt-off-tx:#a3abb4;--tt-add-bg:#e8f4e2;--tt-add-bd:#8fc46b;--tt-add-tx:#3f6b1f;--tt-cx-bg:#fdecec;--tt-cx-tx:#a33;--tt-f-room-bg:#fff2d9;--tt-f-room:#b26a00;--tt-f-cx-bg:#fdecec;--tt-f-cx:#b03030;--tt-f-add-bg:#e8f4e2;--tt-f-add:#3f6b1f;--tt-f-mv-bg:#efe9fd;--tt-f-mv:#6a4fc0;--tt-today-bd:#5b8def;--tt-study-bg:#e9eefc;--tt-study-bd:#9bb6e8;--tt-study-tx:#2f4f8f}
+    html.dark .tt-root{--tt-panel:#181c1f;--tt-panel2:#20262a;--tt-line:rgba(255,255,255,.1);--tt-tx:#e6edf3;--tt-tx2:#9aa6b2;--tt-on-bg:#123c3a;--tt-on-bd:#3f9c93;--tt-on-tx:#a7e5dc;--tt-off-bg:#1d2226;--tt-off-tx:#5f6a75;--tt-add-bg:#1f3319;--tt-add-bd:#4f8a3a;--tt-add-tx:#a8d68a;--tt-cx-bg:#3a1a1a;--tt-cx-tx:#f29a9a;--tt-f-room-bg:#4a3410;--tt-f-room:#f5c46b;--tt-f-cx-bg:#4a1a1a;--tt-f-cx:#f29a9a;--tt-f-add-bg:#23391a;--tt-f-add:#a8d68a;--tt-f-mv-bg:#2e2748;--tt-f-mv:#c0b0f0;--tt-today-bd:#5b8def;--tt-study-bg:#1d2740;--tt-study-bd:#3f5fa8;--tt-study-tx:#aebfe6}
+    .tt-root{margin:18px 0;font-size:13px;line-height:1.6;color:var(--tt-tx)}
+    .tt-panel{background:var(--tt-panel);border:1px solid var(--tt-line);border-radius:14px;padding:16px}
+    .tt-top{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px}
+    .tt-title{font-size:15px;font-weight:500}
+    .tt-sub{font-size:12px;color:var(--tt-tx2)}
+    .tt-bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:14px 0 10px}
+    .tt-bar button,.tt-bar select{font:inherit;font-size:12px;padding:4px 10px;border:1px solid var(--tt-line);background:var(--tt-panel2);color:var(--tt-tx);border-radius:8px;cursor:pointer}
+    .tt-bar button:hover{border-color:var(--tt-on-bd)}
+    #tt-week{display:flex;align-items:center;gap:8px;font-size:14px}
+    .tt-wdate{font-size:12px;color:var(--tt-tx2)}
+    .tt-now{font-style:normal;font-size:11px;padding:1px 6px;border-radius:6px;background:var(--tt-on-bg);color:var(--tt-on-tx)}
+    .tt-changes{margin:10px 0;padding:10px 12px;border:1px dashed var(--tt-line);border-radius:10px;background:var(--tt-panel2)}
+    .tt-changes.is-empty{display:none}
+    .tt-h4{font-size:13px;font-weight:500;margin:0 0 6px}
+    .tt-changes ul{margin:0;padding-left:18px}
+    .tt-changes li{font-size:12px}
+    .tt-grid{display:grid;grid-template-columns:52px repeat(var(--tt-cols,5),minmax(84px,1fr));gap:6px;overflow-x:auto;padding-bottom:2px}
+    .tt-row{display:contents}
+    .tt-sl{font-size:11px;color:var(--tt-tx2);display:flex;flex-direction:column;justify-content:center;line-height:1.35}
+    .tt-sl em{font-style:normal;font-size:10px;opacity:.75}
+    .tt-dh{font-size:12px;color:var(--tt-tx2);text-align:center;display:flex;flex-direction:column;line-height:1.35;padding-bottom:2px}
+    .tt-dh em{font-style:normal;font-size:10px;opacity:.75}
+    .tt-dh.is-today{color:var(--tt-today-bd);font-weight:500}
+    .tt-cell{position:relative;min-height:54px;border-radius:9px;padding:7px 8px;border:1px solid transparent;display:flex;flex-direction:column;justify-content:center}
+    .tt-cell b{font-weight:500;font-size:13px}
+    .tt-cell span{font-size:11px;margin-top:2px;opacity:.85;word-break:break-all}
+    .tt-time{margin-top:3px;opacity:.7;font-variant-numeric:tabular-nums;letter-spacing:.2px}
+    .is-on{background:var(--tt-on-bg);border-color:var(--tt-on-bd);color:var(--tt-on-tx)}
+    .is-off{background:var(--tt-off-bg);color:var(--tt-off-tx)}
+    .is-add{background:var(--tt-add-bg);border-color:var(--tt-add-bd);color:var(--tt-add-tx)}
+    .is-study{background:var(--tt-study-bg);border-color:var(--tt-study-bd);color:var(--tt-study-tx)}
+    .is-cancel{background:var(--tt-cx-bg);color:var(--tt-cx-tx)}
+    .is-cancel b{text-decoration:line-through}
+    .is-empty{background:transparent}
+    .tt-cell.is-today{box-shadow:inset 0 0 0 2px var(--tt-today-bd)}
+    .tt-flag{position:absolute;top:4px;right:4px;font-size:9px;text-decoration:none;border-radius:4px;padding:0 4px;line-height:14px}
+    .f-room{background:var(--tt-f-room-bg);color:var(--tt-f-room)}
+    .f-move,.f-swap{background:var(--tt-f-mv-bg);color:var(--tt-f-mv)}
+    .f-cancel{background:var(--tt-f-cx-bg);color:var(--tt-f-cx)}
+    .f-add{background:var(--tt-f-add-bg);color:var(--tt-f-add)}
+    .f-off{background:transparent;border:1px solid currentColor;opacity:.7}
+    .tt-list{display:none;list-style:none;margin:14px 0 0;padding:0}
+    .tt-list li{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-top:1px solid var(--tt-line);font-size:12px}
+    .tt-list b{font-weight:500}
+    .tt-list span{color:var(--tt-tx2)}
+    .tt-legend{display:flex;flex-wrap:wrap;gap:12px;margin-top:12px;font-size:11px;color:var(--tt-tx2)}
+    .tt-legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+    .tt-foot{margin-top:10px;font-size:11px;color:var(--tt-tx2)}
+    .tt-sec{margin-top:18px}
+    .tt-periods{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:6px;list-style:none;margin:8px 0 0;padding:0}
+    .tt-periods li{background:var(--tt-panel2);border-radius:8px;padding:6px 9px;font-size:12px;display:flex;justify-content:space-between;gap:6px}
+    .tt-periods span{color:var(--tt-tx2);font-size:11px}
+    .tt-periods li.tt-per-empty{background:transparent;border:1px dashed var(--tt-line);opacity:.7}
+    .tt-err{font-size:12px;color:var(--tt-cx-tx)}
+    .tt-cell[data-id]{cursor:pointer}
+    .tt-cell.is-sel{outline:2px solid var(--tt-today-bd);outline-offset:-2px}
+    .tt-cell[data-id]:focus-visible{outline:2px solid var(--tt-today-bd);outline-offset:-2px}
+    .tt-detail{margin-top:12px;border:1px solid var(--tt-line);border-radius:10px;background:var(--tt-panel2);overflow:hidden}
+    .tt-detail.is-empty{display:none}
+    .tt-dtop{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 12px;border-bottom:1px solid var(--tt-line)}
+    .tt-dname{font-size:13px;font-weight:500}
+    .tt-dclose{border:none;background:transparent;color:var(--tt-tx2);font-size:16px;line-height:1;cursor:pointer;padding:2px 6px;border-radius:6px}
+    .tt-dclose:hover{background:var(--tt-line)}
+    .tt-dbody{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;padding:10px 12px}
+    .tt-dbody>div{display:flex;flex-direction:column;gap:2px}
+    .tt-dbody b{font-size:11px;font-weight:400;color:var(--tt-tx2)}
+    .tt-dbody span{font-size:12px}
+    .tt-old{font-style:normal;font-size:11px;opacity:.7;margin-left:4px}
+    .tt-dnote{padding:0 12px 10px;font-size:12px;color:var(--tt-tx2);line-height:1.6}
+    @media(max-width:640px){.tt-list{display:block}.tt-panel{padding:12px}}
+    .tt-notices-panel{margin-bottom:14px}
+    .tt-notices-panel .tt-top{margin-bottom:10px}
+    .tt-notices{display:flex;flex-direction:column;gap:10px}
+    .tt-nt{border-left:3px solid var(--tt-on-bd);background:var(--tt-panel2);border-radius:8px;padding:8px 12px}
+    .tt-nt-head{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:2px}
+    .tt-nt-date{font-size:11px;color:var(--tt-tx2)}
+    .tt-nt-title{font-size:13px;font-weight:500}
+    .tt-nt-text{font-size:12px;color:var(--tt-tx);line-height:1.6;white-space:pre-wrap}
+    .tt-nt-none{color:var(--tt-tx2);opacity:.8;font-size:12px}
+  </style>
+  <div class="tt-panel tt-notices-panel">
+    <div class="tt-top"><span class="tt-title">通知</span><span class="tt-sub">重要安排与提醒</span></div>
+    <div id="tt-notices" class="tt-notices"></div>
+  </div>
+  <div class="tt-panel">
+    <div class="tt-top"><span class="tt-title">软件2615 课表</span><span class="tt-sub">北校区 · 2026-2027 学年第 1 学期</span></div>
+    <div class="tt-bar">
+      <button id="tt-prev" type="button">← 上一周</button>
+      <div id="tt-week"></div>
+      <button id="tt-next" type="button">下一周 →</button>
+      <button id="tt-today" type="button">回到本周</button>
+      <select id="tt-select" aria-label="选择周次"></select>
+    </div>
+    <div id="tt-changes" class="tt-changes is-empty"></div>
+    <div id="tt-grid" class="tt-grid"></div>
+    <div id="tt-detail" class="tt-detail is-empty"></div>
+    <ul id="tt-list" class="tt-list"></ul>
+    <div class="tt-legend"><span><i style="background:var(--tt-on-bg);border:1px solid var(--tt-on-bd)"></i>本周有课</span><span><i style="background:var(--tt-off-bg)"></i>本周不上</span><span><i style="background:var(--tt-f-room-bg)"></i>改地点</span><span><i style="background:var(--tt-f-mv-bg)"></i>调课 / 对调</span><span><i style="background:var(--tt-f-cx-bg)"></i>停课</span><span><i style="background:var(--tt-add-bg);border:1px solid var(--tt-add-bd)"></i>临时新增</span><span><i style="background:var(--tt-study-bg);border:1px solid var(--tt-study-bd)"></i>晚自习</span></div>
+    <div class="tt-foot"><span id="tt-meta"></span></div>
+    <div class="tt-sec"><div class="tt-h4">北校区作息时间</div><ul id="tt-periods" class="tt-periods"></ul></div>
+  </div>
+</div>
+
+<script is:inline>
+/* 软件2615 动态课表 —— 读取 /assets/data/schedule-2615.json 渲染，支持周次切换与临时调整。
+   封装为组件后：脚本内联，并监听 astro:page-load 以兼容站内 SPA 跳转（对齐 todo-widget 已验证模式）。 */
+function initClassSchedule() {
+  var root = document.querySelector(".tt-root");
+  if (!root) return;
+  if (root.dataset.ttBound === "1") return; // 只绑一次，避免 SPA 多次跳转重复绑定
+  root.dataset.ttBound = "1";
+
+  var DATA_URL = "/assets/data/schedule-2615.json";
+  var DAYS = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"];
+  var SLOTS = ["1-2", "3-4", "5-6", "7-8", "9-10", "11"];
+  var DATA = null;
+  var CUSTOM_SLOTS = {};
+  var week = 1;
+  var realWeek = 1;
+  var selId = null;
+  var today = new Date();
+
+  function slotInfo(key) {
+    return (DATA.meta.slots && DATA.meta.slots[key]) || CUSTOM_SLOTS[key] || {};
+  }
+  /* 支持"临时新增"落在非标准时段（如 15:45），行按起始时间排序。 */
+  function sortKey(t) {
+    var m = String(t || "").match(/(\d{1,2}:\d{2})/);
+    return m ? m[1] : "99:99";
+  }
+  function buildRows() {
+    var rows = SLOTS.map(function (sk) {
+      var st = slotInfo(sk);
+      return { key: sk, label: st.label || sk, time: st.time || "" };
+    });
+    Object.keys(CUSTOM_SLOTS).forEach(function (k) {
+      var st = CUSTOM_SLOTS[k];
+      rows.push({ key: k, label: st.label || "临时", time: st.time || "" });
+    });
+    rows.sort(function (a, b) {
+      var ka = sortKey(a.time), kb = sortKey(b.time);
+      return ka < kb ? -1 : ka > kb ? 1 : 0;
+    });
+    return rows;
+  }
+
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c];
+    });
+  }
+  function monday(w) {
+    var p = DATA.meta.week1Monday.split("-");
+    var d = new Date(+p[0], +p[1] - 1, +p[2]);
+    d.setDate(d.getDate() + (w - 1) * 7);
+    return d;
+  }
+  function fmt(d) {
+    return d.getMonth() + 1 + "/" + d.getDate();
+  }
+  function parseWeeks(v) {
+    var out = [];
+    if (Array.isArray(v)) {
+      v.forEach(function (x) { out.push(+x); });
+      return out;
+    }
+    String(v || "").split(/[,，]/).forEach(function (p) {
+      p = p.trim();
+      if (!p) return;
+      var m = p.match(/^(\d+)\s*[-~—]\s*(\d+)$/);
+      if (m) { for (var i = +m[1]; i <= +m[2]; i++) out.push(i); }
+      else if (/^\d+$/.test(p)) out.push(+p);
+    });
+    return out;
+  }
+  function calcRealWeek() {
+    var t = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    return Math.floor(Math.round((t - monday(1)) / 86400000) / 7) + 1;
+  }
+
+  function build(w) {
+    var notes = [];
+    var entries = [];
+    CUSTOM_SLOTS = {};
+    DATA.courses.forEach(function (c) {
+      entries.push({
+        id: c.id, day: c.day, slot: c.slot, name: c.name,
+        short: c.short || c.name, room: c.room || "", teacher: c.teacher || "",
+        weeks: c.weeks || "",
+        active: parseWeeks(c.weeks).indexOf(w) >= 0, cancelled: false,
+        temp: false, changes: []
+      });
+    });
+    var byId = {};
+    entries.forEach(function (e) { byId[e.id] = e; });
+    (DATA.overrides || []).forEach(function (ov) {
+      if (parseWeeks(ov.weeks).indexOf(w) < 0) return;
+      var t = ov.type || "note";
+      if (t === "note") { notes.push(ov.text || ov.note || ""); return; }
+      if (t === "add") {
+        if (ov.time && !(DATA.meta.slots && DATA.meta.slots[ov.slot])) {
+          CUSTOM_SLOTS[ov.slot] = { label: ov.slotLabel || "临时", time: ov.time };
+        }
+        entries.push({
+          id: ov.id || "tmp" + entries.length, day: ov.day, slot: ov.slot,
+          name: ov.name || "", short: ov.short || ov.name || "", room: ov.room || "",
+          teacher: ov.teacher || "", time: ov.time || "",
+          weeks: Array.isArray(ov.weeks) ? ov.weeks.join(",") : String(ov.weeks || ""),
+          active: true, cancelled: false, temp: true,
+          changes: [{ t: "add", note: ov.note || "" }]
+        });
+        return;
+      }
+      if (t === "swap") {
+        var a = byId[ov.a], b = byId[ov.b];
+        if (a && b) {
+          var ad = a.day, as = a.slot;
+          a.day = b.day; a.slot = b.slot; b.day = ad; b.slot = as;
+          a.changes.push({ t: "swap", note: ov.note || "", with: b.short || b.name });
+          b.changes.push({ t: "swap", note: ov.note || "", with: a.short || a.name });
+        }
+        return;
+      }
+      var e = byId[ov.id];
+      if (!e) return;
+      if (t === "cancel") { e.active = false; e.cancelled = true; e.changes.push({ t: "cancel", note: ov.note || "" }); }
+      else if (t === "room") {
+        var oldRoom = e.room;
+        e.room = ov.room || e.room;
+        e.changes.push({ t: "room", note: ov.note || "", old: oldRoom });
+      }
+      else if (t === "move") {
+        var oldPos = { day: e.day, slot: e.slot, room: e.room };
+        if (ov.day) e.day = ov.day;
+        if (ov.slot) e.slot = ov.slot;
+        if (ov.room) e.room = ov.room;
+        e.active = true;
+        e.changes.push({ t: "move", note: ov.note || "", old: oldPos });
+      }
+    });
+    /* 晚自习：晚上没正课时默认安排（默认 19:00–21:00，占 9-10 节与 11 节两格）。
+       可按「周-星期」用 meta.selfStudy.cellOverrides 覆盖某次晚自习的教室（如 {"6-5":{"room":"修德楼218"}}）。 */
+    var ss = DATA.meta.selfStudy;
+    if (ss && ss.enabled) {
+      var off = ss.offWeeks || [];
+      if (off.indexOf(w) < 0) {
+        var hasClass = entries.some(function (e) { return e.active; });
+        if (hasClass) {
+          var offDays = ss.offDays || [];
+          (ss.days || [1, 2, 3, 4, 5]).forEach(function (d) {
+            var offDay = offDays.some(function (p) { return p[0] === w && p[1] === d; });
+            if (offDay) return;
+            var occupied = entries.some(function (e) {
+              return e.day === d && e.slot === ss.slot && !e.selfStudy &&
+                (e.active || e.cancelled);
+            });
+            if (!occupied) {
+              var co = (ss.cellOverrides && ss.cellOverrides[w + "-" + d]) || null;
+              entries.push({
+                id: "selfstudy-d" + d, day: d, slot: ss.slot,
+                name: ss.name || "晚自习", short: ss.short || ss.name || "晚自习",
+                room: (co && co.room) || "", teacher: "", weeks: String(w),
+                active: true, cancelled: false, temp: false,
+                selfStudy: true, changes: [],
+                startTime: ss.start || "19:00", endTime: "20:30"
+              });
+              entries.push({
+                id: "selfstudy-d" + d + "-11", day: d, slot: "11",
+                name: ss.name || "晚自习", short: ss.short || ss.name || "晚自习",
+                room: (co && co.room) || "", teacher: "", weeks: String(w),
+                active: true, cancelled: false, temp: false,
+                selfStudy: true, changes: [],
+                startTime: "20:30", endTime: (co && co.end) || ss.end || "21:00"
+              });
+            }
+          });
+        }
+      }
+    }
+    return { entries: entries, notes: notes };
+  }
+
+  function changeText(e, ch) {
+    var s = e.short || e.name;
+    if (ch.t === "room") return s + " 上课地点改为 " + e.room;
+    if (ch.t === "move") return s + " 调整到 " + DAYS[e.day - 1] + " " + e.slot + " 节" + (e.room ? "（" + e.room + "）" : "");
+    if (ch.t === "cancel") return s + " 停课";
+    if (ch.t === "swap") return s + (ch.with ? " 与 " + ch.with + " 对调上课时间" : " 与其他课程对调上课时间");
+    if (ch.t === "add") {
+      var s2 = "临时新增：" + (e.name || s);
+      if (e.room) s2 += "（" + e.room + "）";
+      if (e.time) s2 += " " + e.time;
+      return s2;
+    }
+    return s + " 有调整";
+  }
+
+  function detailHtml(e) {
+    var st = slotInfo(e.slot);
+    var wk = parseWeeks(e.weeks);
+    var oldRoom = "", oldPos = null;
+    e.changes.forEach(function (c) {
+      if (c.t === "room") oldRoom = c.old || "";
+      if (c.t === "move" && c.old) { oldPos = c.old; oldRoom = c.old.room || oldRoom; }
+    });
+    var state = e.selfStudy ? "晚自习（默认安排）" : e.cancelled ? "本周停课" : e.active ? (e.temp ? "临时安排" : "本周有课") : "本周不上";
+    var timeTxt;
+    if (e.selfStudy && e.endTime) {
+      timeTxt = (st.label || e.slot) + " " + (e.startTime || "19:00") + "–" + e.endTime;
+    } else {
+      timeTxt = SLOTS.indexOf(e.slot) < 0
+        ? (st.time || e.slot)
+        : (st.label || e.slot) + " " + (st.time || "");
+    }
+    var rows = [
+      ["任课教师", esc(e.teacher || "—")],
+      ["上课地点", esc(e.room || "—") +
+        (oldRoom && oldRoom !== e.room ? '<i class="tt-old">原 ' + esc(oldRoom) + "</i>" : "")],
+      ["上课时间", DAYS[e.day - 1] + " " + timeTxt +
+        (slotInfo(e.slot).note ? '<i class="tt-old">' + esc(slotInfo(e.slot).note) + "</i>" : "")],
+      ["上课周次", e.weeks ? "第 " + esc(String(e.weeks)).replace(/,/g, "、") + " 周" : "—"],
+      ["本学期周数", wk.length ? "共 " + wk.length + " 周" : "—"],
+      ["本周状态", state]
+    ];
+    if (oldPos && (oldPos.day !== e.day || oldPos.slot !== e.slot)) {
+      rows.splice(3, 0, ["原时间", DAYS[oldPos.day - 1] + " " +
+        (slotInfo(oldPos.slot).label || oldPos.slot)]);
+    }
+    var notes = e.changes.map(function (c) {
+      return esc(changeText(e, c) + (c.note ? "：" + c.note : ""));
+    });
+    return '<div class="tt-dtop"><span class="tt-dname">' + esc(e.name || e.short) +
+      '</span><button type="button" class="tt-dclose" data-close="1" aria-label="关闭详情">×</button></div>' +
+      '<div class="tt-dbody">' + rows.map(function (r) {
+        return "<div><b>" + r[0] + "</b><span>" + r[1] + "</span></div>";
+      }).join("") + "</div>" +
+      (notes.length ? '<div class="tt-dnote">' + notes.join("<br>") + "</div>" : "");
+  }
+
+  function render() {
+    var res = build(week);
+    var mon = monday(week);
+    var sun = new Date(mon.getTime());
+    sun.setDate(sun.getDate() + 6);
+    var todayIdx = today.getDay() === 0 ? 7 : today.getDay();
+    var isNow = week === realWeek;
+
+    var maxDay = 5;
+    res.entries.forEach(function (e) { if (e.day > maxDay) maxDay = e.day; });
+    if (maxDay > 7) maxDay = 7;
+
+    var head = document.getElementById("tt-week");
+    if (head) {
+      head.innerHTML =
+        '<b>第 ' + week + ' 周</b>' +
+        '<span class="tt-wdate">' + fmt(mon) + " – " + fmt(sun) + "</span>" +
+        (isNow ? '<i class="tt-now">本周</i>' : "");
+    }
+
+    var html = '<div class="tt-row tt-row-h"><i class="tt-sl"></i>';
+    for (var d = 1; d <= maxDay; d++) {
+      var dd = new Date(mon.getTime());
+      dd.setDate(dd.getDate() + d - 1);
+      html += '<span class="tt-dh' + (isNow && d === todayIdx ? " is-today" : "") + '">' +
+        DAYS[d - 1] + '<em>' + fmt(dd) + "</em></span>";
+    }
+    html += "</div>";
+
+    var rows = buildRows();
+    rows.forEach(function (row) {
+      var sk = row.key;
+      var st = slotInfo(sk);
+      html += '<div class="tt-row"><i class="tt-sl">' + (st.label || sk) +
+        "<em>" + (st.time || "") + "</em></i>";
+      for (var d = 1; d <= maxDay; d++) {
+        var cell = null;
+        res.entries.forEach(function (e) { if (e.day === d && e.slot === sk) cell = e; });
+        if (!cell) { html += '<div class="tt-cell is-empty"></div>'; continue; }
+        var cls = "tt-cell " + (cell.cancelled ? "is-cancel" : cell.selfStudy ? "is-study" : cell.active ? (cell.temp ? "is-add" : "is-on") : "is-off");
+        var flag = "";
+        if (cell.changes.length) {
+          var t = cell.cancelled ? "cancel" : cell.changes[0].t;
+          var lb = t === "room" ? "改地点" : t === "move" ? "调课" : t === "cancel" ? "停课" : t === "add" ? "新增" : "对调";
+          flag = '<u class="tt-flag f-' + t + '">' + lb + "</u>";
+        } else if (!cell.active && !cell.cancelled) {
+          flag = '<u class="tt-flag f-off">非本周</u>';
+        }
+        var tt = (cell.selfStudy && cell.endTime) ? (cell.startTime + "–" + cell.endTime) : (st.time || "");
+        var tip = cell.name + (cell.teacher ? " · " + cell.teacher : "") +
+          (cell.room ? " · " + cell.room : "") + " · " + DAYS[d - 1] + " " + (st.label || sk) + " " + tt;
+        var timeBadge = (tt && tt !== st.time) ? '<span class="tt-time">' + esc(tt) + "</span>" : "";
+        html += '<div class="' + cls + (isNow && d === todayIdx ? " is-today" : "") +
+          (cell.id === selId ? " is-sel" : "") +
+          '" data-id="' + esc(cell.id) + '" tabindex="0" role="button"' +
+          ' aria-label="' + esc(cell.name + " 详情") + '" title="' + esc(tip) + '"><b>' +
+          esc(cell.short) + "</b>" +
+          (cell.room ? "<span>" + esc(cell.room) + "</span>" : "") + timeBadge + flag + "</div>";
+      }
+      html += "</div>";
+    });
+
+    var grid = document.getElementById("tt-grid");
+    if (grid) { grid.style.setProperty("--tt-cols", maxDay); grid.innerHTML = html; }
+
+    var chg = [];
+    var seen = {};
+    res.entries.forEach(function (e) {
+      e.changes.forEach(function (c) {
+        var txt = changeText(e, c);
+        if (c.note) txt += "：" + c.note;
+        if (seen[txt]) return;
+        seen[txt] = 1;
+        chg.push({ t: c.t, txt: txt });
+      });
+    });
+    res.notes.forEach(function (n) { if (n) chg.push({ t: "note", txt: n }); });
+    (DATA.meta.practice || []).forEach(function (p) {
+      if (parseWeeks(p.weeks).indexOf(week) >= 0) {
+        chg.push({ t: "note", txt: "整周实践：" + p.name + (p.teacher ? "（" + p.teacher + "）" : "") + "，" + (p.note || "") });
+      }
+    });
+    var box = document.getElementById("tt-changes");
+    if (box) {
+      if (!chg.length) { box.innerHTML = ""; box.className = "tt-changes is-empty"; }
+      else {
+        box.className = "tt-changes";
+        box.innerHTML = "<h4>本周调整</h4><ul>" + chg.map(function (c) {
+          return '<li class="li-' + c.t + '">' + esc(c.txt) + "</li>";
+        }).join("") + "</ul>";
+      }
+    }
+
+    var list = document.getElementById("tt-list");
+    if (list) {
+      var on = res.entries.filter(function (e) { return e.active && !e.selfStudy; }).sort(function (a, b) {
+        return a.day - b.day || SLOTS.indexOf(a.slot) - SLOTS.indexOf(b.slot);
+      });
+      list.innerHTML = on.map(function (e) {
+        var st = slotInfo(e.slot);
+        return '<li><b>' + esc(e.short) + "</b><span>" + DAYS[e.day - 1] + " " +
+          (st.label || e.slot) + " " + (st.time || "") + "</span><span>" + esc(e.room) + "</span></li>";
+      }).join("");
+    }
+
+    var dbox = document.getElementById("tt-detail");
+    if (dbox) {
+      var cur = null;
+      if (selId) {
+        res.entries.forEach(function (e) { if (e.id === selId) cur = e; });
+      }
+      if (!cur) {
+        selId = null;
+        dbox.className = "tt-detail is-empty";
+        dbox.innerHTML = "";
+      } else {
+        dbox.className = "tt-detail";
+        dbox.innerHTML = detailHtml(cur);
+      }
+    }
+  }
+
+  function renderPeriods() {
+    var box = document.getElementById("tt-periods");
+    if (!box) return;
+    box.innerHTML = (DATA.meta.periods || []).map(function (p) {
+      var t = p.start ? p.start + "–" + p.end : "";
+      return "<li" + (t ? "" : " class=\"tt-per-empty\"") + "><b>" + esc(p.name) + "</b><span>" +
+        (t || "空白") + "</span></li>";
+    }).join("");
+  }
+
+  function renderNotices() {
+    var box = document.getElementById("tt-notices");
+    if (!box) return;
+    var arr = (DATA.notices || []).filter(function (n) {
+      if (!n.weeks) return true;
+      return parseWeeks(n.weeks).indexOf(realWeek) >= 0;
+    });
+    if (!arr.length) { box.innerHTML = '<div class="tt-nt tt-nt-none">无</div>'; return; }
+    box.innerHTML = arr.map(function (n) {
+      var date = n.date ? '<span class="tt-nt-date">' + esc(n.date) + "</span>" : "";
+      var title = n.title ? '<span class="tt-nt-title">' + esc(n.title) + "</span>" : "";
+      var text = n.text ? '<div class="tt-nt-text">' + esc(n.text) + "</div>" : "";
+      var head = (date || title) ? '<div class="tt-nt-head">' + date + title + "</div>" : "";
+      return '<div class="tt-nt">' + head + text + "</div>";
+    }).join("");
+  }
+
+  function setWeek(w) {
+    var max = DATA.meta.totalWeeks || 19;
+    if (w < 1) w = 1;
+    if (w > max) w = max;
+    week = w;
+    var sel = document.getElementById("tt-select");
+    if (sel) sel.value = w;
+    render();
+  }
+
+  fetch(DATA_URL, { cache: "no-store" })
+    .then(function (r) { return r.json(); })
+    .then(function (d) {
+      DATA = d;
+      realWeek = calcRealWeek();
+      var sel = document.getElementById("tt-select");
+      if (sel) {
+        var max = d.meta.totalWeeks || 19;
+        var opts = "";
+        for (var i = 1; i <= max; i++) opts += '<option value="' + i + '">第 ' + i + " 周</option>";
+        sel.innerHTML = opts;
+        sel.addEventListener("change", function () { setWeek(+sel.value); });
+      }
+      var pv = document.getElementById("tt-prev");
+      var nx = document.getElementById("tt-next");
+      var nw = document.getElementById("tt-today");
+      if (pv) pv.addEventListener("click", function () { setWeek(week - 1); });
+      if (nx) nx.addEventListener("click", function () { setWeek(week + 1); });
+      if (nw) nw.addEventListener("click", function () { setWeek(realWeek); });
+      var gridEl = document.getElementById("tt-grid");
+      if (gridEl) {
+        var pick = function (ev) {
+          var t = ev.target;
+          var cell = t && t.closest ? t.closest(".tt-cell") : null;
+          if (!cell) return;
+          var id = cell.getAttribute("data-id");
+          if (!id) return;
+          selId = id === selId ? null : id;
+          render();
+        };
+        gridEl.addEventListener("click", pick);
+        gridEl.addEventListener("keydown", function (ev) {
+          if (ev.key !== "Enter" && ev.key !== " ") return;
+          ev.preventDefault();
+          pick(ev);
+        });
+      }
+      var dboxEl = document.getElementById("tt-detail");
+      if (dboxEl) {
+        dboxEl.addEventListener("click", function (ev) {
+          if (ev.target && ev.target.getAttribute("data-close")) { selId = null; render(); }
+        });
+      }
+      renderPeriods();
+      renderNotices();
+      setWeek(realWeek >= 1 ? realWeek : 1);
+      var meta = document.getElementById("tt-meta");
+      if (meta) {
+        meta.textContent = d.meta.className + " · " + d.meta.campus + " · " + d.meta.term +
+          " · 数据更新 " + d.meta.updated;
+      }
+    })
+    .catch(function () {
+      var g = document.getElementById("tt-grid");
+      if (g) g.innerHTML = '<p class="tt-err">课表数据加载失败，请稍后重试。</p>';
+    });
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", initClassSchedule);
+} else {
+  initClassSchedule();
+}
+/* 站内 SPA 跳转后重新初始化（Firefly 使用 astro:page-load）。 */
+document.addEventListener("astro:page-load", initClassSchedule);
+</script>
