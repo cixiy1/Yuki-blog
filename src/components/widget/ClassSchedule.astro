@@ -1,8 +1,4 @@
 ---
-# ClassSchedule.astro —— 软件2615 动态课表（Firefly 官方组件）
-# 把原先散落在 software-2615-schedule.md 内的「内嵌 HTML + 外置 timetable-2615.js」封装为正式组件。
-# 样式用 <style is:global>（格子由脚本 innerHTML 生成，Astro scoped 匹配不到动态节点）；
-# 逻辑用 <script is:inline> + astro:page-load 重初始化（对齐博客内 todo-widget 的已验证模式）。
 ---
 <div class="tt-root">
   <style is:global>
