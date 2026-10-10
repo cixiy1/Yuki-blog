@@ -39,10 +39,14 @@
     .tt-cell b{font-weight:500;font-size:13px}
     .tt-cell span{font-size:11px;margin-top:2px;opacity:.85;word-break:break-all}
     .tt-time{margin-top:3px;opacity:.7;font-variant-numeric:tabular-nums;letter-spacing:.2px}
-    .tt-root .is-on{background:var(--tt-on-bg);border-color:var(--tt-on-bd);color:var(--tt-on-tx)}
+    /* 课程卡片一律不描边（2026-10-10 用户要求「卡片不需要彩色的深色边框」）：
+       只留底色 + 文字色，边框由 .tt-cell 的 1px transparent 占位保证尺寸不变。
+       别把 border-color 加回来——is-on/is-add/is-study 三色描边已按用户要求删除。
+       今日列的 .tt-cell.is-today 蓝色内描边是「今天」标识，用户未要求去掉，保留。 */
+    .tt-root .is-on{background:var(--tt-on-bg);color:var(--tt-on-tx)}
     .tt-root .is-off{background:var(--tt-off-bg);color:var(--tt-off-tx)}
-    .tt-root .is-add{background:var(--tt-add-bg);border-color:var(--tt-add-bd);color:var(--tt-add-tx)}
-    .tt-root .is-study{background:var(--tt-study-bg);border-color:var(--tt-study-bd);color:var(--tt-study-tx)}
+    .tt-root .is-add{background:var(--tt-add-bg);color:var(--tt-add-tx)}
+    .tt-root .is-study{background:var(--tt-study-bg);color:var(--tt-study-tx)}
     .tt-root .is-cancel{background:var(--tt-cx-bg);color:var(--tt-cx-tx)}
     .tt-root .is-cancel b{text-decoration:line-through}
     .tt-root .is-empty{background:transparent}
