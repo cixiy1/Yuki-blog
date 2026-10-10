@@ -2,16 +2,24 @@
 /**
  * 「本文统计」侧栏组件
  *
- * 与「站点信息」并列放在文章详情页的侧栏里，显示**当前这篇文章**的数据。
+ * 展示**当前这篇文章**的数据（字数 / 阅读时长 / 发布于·更新于 / 分类 / 阅读量）。
  *
- * 为什么用 URL 反查当前文章，而不是让上层传 props：
- *   SideBar.astro 是通用渲染器，只有 sidebarToc 有专门的 props 通道，
- *   为它新开一条通道要动布局层（MainGridLayout / [...slug].astro 一路传下来）。
- *   而文章详情页的地址一定是 /posts/<slug>/，用 getPostUrlBySlug 逐个比对即可在构建期命中，
- *   命中不到就整块不渲染——非文章页天然不会显示。
+ * ⚠️ 为什么必须「服务端渲染 + 客户端按当前文章重建」两套并存：
+ *   侧栏用**静态容器**承载（见 src/components/layout/SidebarColumn.astro：position=both 时
+ *   左右两侧都走 #left-sidebar-wrapper / #right-sidebar-static），**不在 Swup 替换范围内**，
+ *   站内跳转后这块 DOM 不会变。若只做 SSR，会出现两种错：
+ *     · 从首页/归档等非文章页点进文章 → 构建期 current 不成立，侧栏里**根本没有这张卡**；
+ *     · 文章之间互跳 → 卡片停在**首屏那篇**的字数/日期/分类上（只有阅读量数字被 site-stats.js 纠正）。
+ *   所以：SSR 负责首屏直开文章时立即出现（无 CLS / 无闪动），
+ *   客户端脚本负责在每个 Swup 导航后按当前文章重建行。
  *
- * 阅读量由 /assets/js/site-stats.js 在客户端填（复用 [data-post-stats] 约定），
- * 计数服务取不到时该行保持隐藏，不会留占位符。
+ * 数据来源：文章页会渲染 <script type="application/json" id="post-stats-src">，
+ *   它位于 #swup-container 内、会随导航被整体替换，脚本读它即得当前文章的真实数据。
+ *   加密文章**不输出**该 JSON → 本卡片保持隐藏（解锁前不该露出字数等）。
+ *
+ * 阅读量那一行由 /assets/js/site-stats.js 填写（复用 [data-post-stats] 约定）：
+ *   本脚本只负责把 data-stats-id 改成当前文章、并在变更后触发一次取值；
+ *   计数服务取不到时该行保持隐藏，不会留占位符。
  */
 import { render } from "astro:content";
 import { Icon } from "astro-icon/components";
@@ -34,8 +42,7 @@ const showTitle = widgetConfig?.showTitle !== false;
 
 // 两边都要归一化再比：
 //   · 尾斜杠——文章页是目录式路由（/posts/x/），但 Astro.url 在不同构建配置下可能不带
-//   · 百分号编码——中文 slug（如「小施施七夕快乐」）在 Astro.url 里是 %E5%B0%8F… 形式，
-//     而 getPostUrlBySlug 返回的是原文
+//   · 百分号编码——中文 slug 在 Astro.url 里是 %E5%B0%8F… 形式，而 getPostUrlBySlug 返回原文
 const normalizePath = (value: string) => {
 	let decoded = String(value || "");
 	try {
@@ -76,84 +83,106 @@ const updated = current?.data.updated
 	? formatDateToYYYYMMDD(current.data.updated)
 	: "";
 
-const rows: { icon: string; label: string; value: string }[] = [];
-
-if (words) {
-	rows.push({ icon: "material-symbols:notes", label: "字数", value: `${words} 字` });
-}
-if (minutes) {
-	rows.push({
+// 行定义（顺序即展示顺序）。空值行隐藏；客户端重建时按 data-key 回填。
+const rowDefs: { key: string; icon: string; label: string; value: string }[] = [
+	{
+		key: "words",
+		icon: "material-symbols:notes",
+		label: "字数",
+		value: words ? `${words} 字` : "",
+	},
+	{
+		key: "minutes",
 		icon: "material-symbols:schedule",
 		label: "阅读时长",
-		value: `约 ${minutes} 分钟`,
-	});
-}
-if (published) {
-	rows.push({
+		value: minutes ? `约 ${minutes} 分钟` : "",
+	},
+	{
+		key: "published",
 		icon: "material-symbols:calendar-month",
 		label: "发布于",
 		value: published,
-	});
-}
-if (updated && updated !== published) {
-	rows.push({ icon: "material-symbols:update", label: "更新于", value: updated });
-}
-if (category) {
-	rows.push({
+	},
+	{
+		key: "updated",
+		icon: "material-symbols:update",
+		label: "更新于",
+		value: updated && updated !== published ? updated : "",
+	},
+	{
+		key: "category",
 		icon: "material-symbols:folder-open",
 		label: "分类",
 		value: category,
-	});
-}
+	},
+];
 
 const statsId = current ? getStatsId(removeFileExtension(current.id)) : "";
 ---
 
 {
-	current && (
+	statsConfig.enable && (
 		<WidgetLayout
 			name="本文统计"
 			showTitle={showTitle}
 			id="post-stats"
 			class={className}
-			style={style}
+			style={
+				current ? style : `${style ? `${style};` : ""}display:none`
+			}
 		>
-			<div class="flex flex-col gap-2">
+			<div
+				class="flex flex-col gap-2"
+				data-post-stats-root
+				data-current-id={current ? statsId : ""}
+			>
 				{/* 阅读量：数字由 site-stats.js 填，取不到就一直隐藏 */}
 				<div
+					id="post-stats-read"
 					class="flex items-center justify-between px-3 py-2 rounded-lg bg-neutral-100/60 dark:bg-neutral-800/50"
 					style="display:none"
 					data-post-stats
-					data-stats-id={statsId}
+					data-stats-id={current ? statsId : undefined}
 					title="本文阅读量"
 				>
 					<div class="flex items-center gap-2.5">
 						<div class="text-(--primary) text-lg">
 							<Icon is:inline name="material-symbols:visibility" />
 						</div>
-						<span class="text-neutral-700 dark:text-neutral-300 font-medium text-sm">
+						<span
+							class="text-neutral-700 dark:text-neutral-300 font-medium text-sm"
+						>
 							阅读量
 						</span>
 					</div>
-					<span class="text-xs font-bold text-neutral-900 dark:text-neutral-100 text-right">
+					<span
+						class="text-xs font-bold text-neutral-900 dark:text-neutral-100 text-right"
+					>
 						<span data-post-stats-value>—</span>
 						<span class="ml-0.5">次</span>
 					</span>
 				</div>
 
-				{rows.map((row) => (
-					<div class="flex items-center justify-between px-3 py-2 rounded-lg bg-neutral-100/60 dark:bg-neutral-800/50">
+				{rowDefs.map((row) => (
+					<div
+						class="flex items-center justify-between px-3 py-2 rounded-lg bg-neutral-100/60 dark:bg-neutral-800/50"
+						data-key={row.key}
+						style={row.value ? "" : "display:none"}
+					>
 						<div class="flex items-center gap-2.5">
 							<div class="text-(--primary) text-lg">
 								<Icon is:inline name={row.icon} />
 							</div>
-							<span class="text-neutral-700 dark:text-neutral-300 font-medium text-sm">
+							<span
+								class="text-neutral-700 dark:text-neutral-300 font-medium text-sm"
+							>
 								{row.label}
 							</span>
 						</div>
 						<span
 							class="text-xs font-bold text-neutral-900 dark:text-neutral-100 text-right max-w-[55%] truncate"
 							title={row.value}
+							data-value
 						>
 							{row.value}
 						</span>
@@ -163,3 +192,129 @@ const statsId = current ? getStatsId(removeFileExtension(current.id)) : "";
 		</WidgetLayout>
 	)
 }
+
+{/* 客户端重建：侧栏是静态容器、不随 Swup 替换，必须在每次导航后按当前文章重算这些行。
+    脚本常驻在静态侧栏里，只跑一次；靠导航事件 + 读 #post-stats-src 完成刷新。 */}
+<script is:inline>
+	(function () {
+		if (window.__postStatsWidget) return;
+		window.__postStatsWidget = true;
+
+		var lastNavAt = 0;
+
+		function rootEl() {
+			return document.querySelector('widget-layout[data-id="post-stats"]');
+		}
+
+		/** 当前文章的元数据（由文章页写在 #swup-container 内的 JSON） */
+		function readSource() {
+			var el = document.querySelector(
+				"#swup-container #post-stats-src, #content-wrapper #post-stats-src, #post-stats-src",
+			);
+			if (!el) return null;
+			try {
+				return JSON.parse(el.textContent || "null");
+			} catch (e) {
+				return null;
+			}
+		}
+
+		/** site-stats.js 可能还没就绪，晚一点再补一次取值 */
+		function requestRecord(retry) {
+			if (window.YukiStats && typeof window.YukiStats.record === "function") {
+				try {
+					window.YukiStats.record();
+				} catch (e) {
+					/* 忽略 */
+				}
+				return;
+			}
+			if ((retry || 0) < 3) {
+				setTimeout(function () {
+					requestRecord((retry || 0) + 1);
+				}, 200);
+			}
+		}
+
+		function run() {
+			var root = rootEl();
+			if (!root) return;
+			var box = root.querySelector("[data-post-stats-root]");
+			var readRow = root.querySelector("#post-stats-read");
+			var data = readSource();
+
+			// 非文章页（或加密文章）：整块隐藏，阅读量行的 id 也撤掉，别去污染计数
+			if (!data || !data.id) {
+				root.style.display = "none";
+				if (readRow) readRow.removeAttribute("data-stats-id");
+				if (box) box.setAttribute("data-current-id", "");
+				return;
+			}
+
+			root.style.display = "";
+			if (readRow) readRow.setAttribute("data-stats-id", data.id);
+
+			// 与当前 DOM 已是同一篇（首屏 SSR 已渲染正确）→ 不动，避免无谓重排与重复取值
+			if (box && box.getAttribute("data-current-id") === data.id) return;
+
+			var vals = {
+				words: data.words ? data.words + " 字" : "",
+				minutes: data.minutes ? "约 " + data.minutes + " 分钟" : "",
+				published: data.published || "",
+				updated:
+					data.updated && data.updated !== data.published
+						? data.updated
+						: "",
+				category: data.category || "",
+			};
+
+			var rows = root.querySelectorAll("[data-key]");
+			for (var i = 0; i < rows.length; i++) {
+				var key = rows[i].getAttribute("data-key");
+				var val = vals[key] || "";
+				var slot = rows[i].querySelector("[data-value]");
+				if (slot) {
+					slot.textContent = val;
+					slot.title = val;
+				}
+				rows[i].style.display = val ? "" : "none";
+			}
+
+			if (box) box.setAttribute("data-current-id", data.id);
+
+			// 阅读量行换了 id，催 site-stats.js 重新取一次数
+			requestRecord(0);
+		}
+
+		function onNav() {
+			var now = Date.now();
+			if (now - lastNavAt < 150) return; // 一轮导航常同时命中多个事件，去抖
+			lastNavAt = now;
+			run();
+			setTimeout(run, 60); // 少数事件的 DOM 替换略滞后，补一次
+		}
+
+		document.addEventListener("astro:page-load", onNav);
+		document.addEventListener("swup:contentReplaced", onNav);
+		document.addEventListener("swup:content:replace", onNav);
+		document.addEventListener("swup:page:view", onNav);
+		window.addEventListener("popstate", function () {
+			setTimeout(run, 60);
+		});
+		if (
+			window.swup &&
+			window.swup.hooks &&
+			typeof window.swup.hooks.on === "function"
+		) {
+			window.swup.hooks.on("content:replace", onNav);
+			window.swup.hooks.on("page:view", onNav);
+		}
+
+		// 首屏：等 DOM 解析完再跑（组件可能排在正文之前，此时 JSON 尚未解析到）
+		if (document.readyState === "loading") {
+			document.addEventListener("DOMContentLoaded", run);
+		} else {
+			run();
+		}
+	})();
+</script>

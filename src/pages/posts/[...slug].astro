@@ -246,6 +246,26 @@ const seriesData = await getSeriesPosts(entry);
     type="application/ld+json"
     set:html={JSON.stringify(jsonLd)}
   />
+  {/* 侧栏「本文统计」卡片的数据源：位于 #swup-container 内、随站内导航被整体替换，
+      侧栏是静态容器拿不到新值，所以由这里把「当前文章」的元数据交给它重建。
+      加密文章不输出，避免解锁前泄露字数/日期等。见 src/components/widget/PostStats.astro */}
+  {!entry.data.password && (
+    <script
+      is:inline
+      type="application/json"
+      id="post-stats-src"
+      set:html={JSON.stringify({
+        id: statsId,
+        words: Number(remarkPluginFrontmatter?.words) || 0,
+        minutes: Number(remarkPluginFrontmatter?.minutes) || 0,
+        published: formatDateToYYYYMMDD(entry.data.published),
+        updated: entry.data.updated
+          ? formatDateToYYYYMMDD(entry.data.updated)
+          : "",
+        category: entry.data.category || "",
+      })}
+    />
+  )}
   <div
     class="flex w-full rounded-(--radius-large) overflow-hidden relative mb-4"
   >
