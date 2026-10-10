@@ -125,12 +125,23 @@
     .tt-dclose{transition:background-color .15s ease,color .15s ease,transform .12s ease}
     .tt-dclose:active{transform:scale(.88)}
 
-    /* —— 周次切换（四组动画各管一段，别再退回"整块一起滑"）—— */
-    /* 1) 网格：格子/时段/星期按对角线依次入场（--tt-d 由 render 写入）*/
-    #tt-grid.tt-anim-next .tt-cell,#tt-grid.tt-anim-next .tt-sl,#tt-grid.tt-anim-next .tt-dh{animation:tt-in-next .4s cubic-bezier(.22,.61,.36,1) backwards;animation-delay:calc(var(--tt-d,0) * 16ms)}
-    #tt-grid.tt-anim-prev .tt-cell,#tt-grid.tt-anim-prev .tt-sl,#tt-grid.tt-anim-prev .tt-dh{animation:tt-in-prev .4s cubic-bezier(.22,.61,.36,1) backwards;animation-delay:calc(var(--tt-d,0) * 16ms)}
-    @keyframes tt-in-next{from{opacity:0;transform:translate3d(12px,4px,0) scale(.96)}to{opacity:1;transform:none}}
-    @keyframes tt-in-prev{from{opacity:0;transform:translate3d(-12px,4px,0) scale(.96)}to{opacity:1;transform:none}}
+    /* —— 周次切换（四组动画各管一段）——
+       2026-10-10 用户反馈"切换动画卡卡的"，要求改成滑动切换：
+       ① 网格从「几十个格子各带 transform/opacity 动画」改成 **整块滑动**——
+          旧的一层克隆出来滑出、新的一层滑入，只有 2 个合成层（GPU 友好，不再掉帧）；
+          ⚠️ 别再退回逐格级联（`--tt-d*16ms` 那套），格子多时必掉帧。
+          实现见 JS 的 snapshotGrid() / playSlide()。 */
+    .tt-grid-wrap{position:relative;overflow:hidden;transition:height .26s ease}
+    .tt-grid-old{position:absolute;left:0;right:0;top:0;pointer-events:none}
+    #tt-grid.tt-slide-in-next,#tt-grid.tt-slide-in-prev{will-change:transform}
+    #tt-grid.tt-slide-in-next{animation:tt-slide-in-next .38s cubic-bezier(.22,.61,.36,1) backwards}
+    #tt-grid.tt-slide-in-prev{animation:tt-slide-in-prev .38s cubic-bezier(.22,.61,.36,1) backwards}
+    .tt-grid-old.tt-slide-out-next{animation:tt-slide-out-next .38s cubic-bezier(.22,.61,.36,1) both}
+    .tt-grid-old.tt-slide-out-prev{animation:tt-slide-out-prev .38s cubic-bezier(.22,.61,.36,1) both}
+    @keyframes tt-slide-in-next{from{transform:translateX(100%);opacity:.5}to{transform:none;opacity:1}}
+    @keyframes tt-slide-in-prev{from{transform:translateX(-100%);opacity:.5}to{transform:none;opacity:1}}
+    @keyframes tt-slide-out-next{from{transform:none;opacity:1}to{transform:translateX(-100%);opacity:.35}}
+    @keyframes tt-slide-out-prev{from{transform:none;opacity:1}to{transform:translateX(100%);opacity:.35}}
     /* 2) 周号：按方向翻滚；日期随后淡入 */
     #tt-week b{display:inline-block}
     #tt-week.tt-anim-next b{animation:tt-roll-up .38s cubic-bezier(.22,.61,.36,1) backwards}
@@ -151,10 +162,10 @@
     .tt-detail-anim .tt-dnote{animation:tt-fade-in .36s ease backwards;animation-delay:.14s}
 
     @media (prefers-reduced-motion:reduce){
-      #tt-grid.tt-anim-next *,#tt-grid.tt-anim-prev *,#tt-week.tt-anim-next *,#tt-week.tt-anim-prev *,
+      #tt-grid.tt-slide-in-next,#tt-grid.tt-slide-in-prev,.tt-grid-old,#tt-week.tt-anim-next *,#tt-week.tt-anim-prev *,
       #tt-changes.tt-anim-next,#tt-changes.tt-anim-prev,#tt-changes.tt-anim-next li,#tt-changes.tt-anim-prev li,
       .tt-detail-anim,.tt-detail-anim *,.tt-cell.is-sel,.tt-ripple{animation:none!important}
-      .tt-bar button,.tt-bar select,.tt-cell[data-id],.tt-dclose,.tt-ar{transition:none!important}
+      .tt-bar button,.tt-bar select,.tt-cell[data-id],.tt-dclose,.tt-ar,.tt-grid-wrap{transition:none!important}
       .tt-ripple{display:none}
     }
   </style>
@@ -171,7 +182,7 @@
       <button id="tt-today" type="button"><span>回到本周</span></button>
       <select id="tt-select" aria-label="选择周次"></select>
     </div>
-    <div id="tt-grid" class="tt-grid"></div>
+    <div id="tt-grid-wrap" class="tt-grid-wrap"><div id="tt-grid" class="tt-grid"></div></div>
     <div id="tt-detail" class="tt-detail is-empty"></div>
     <ul id="tt-list" class="tt-list"></ul>
     <div id="tt-changes" class="tt-changes is-empty"></div>
@@ -582,8 +593,9 @@ function initClassSchedule() {
   /* 重播一次 CSS 动画：先摘类再强制重排，再用定时器清理。
      · 必须"摘类 → 重排 → 加类"，否则同方向连续切换不会重播；
      · 必须清理，否则类会常驻、fill 会永久覆盖 :active 等交互态；
-     · 用定时器而非 animationend：多数动画挂在子元素上（格子波浪），
-       grid 自身没有动画 → animationend 永远不会以它为目标。 */
+     · 用定时器而非 animationend：动画多数挂在子元素上（#tt-changes 的 li、
+       详情面板的字段行），容器自身没有动画 → animationend 不会以它为目标。
+       （网格的周次切换在 2026-10-10 改为整块滑动，走 playSlide()，不再用这里。） */
   function replay(el, cls, holdMs) {
     if (!el) return;
     el.classList.remove("tt-anim-next", "tt-anim-prev", "tt-detail-anim");
@@ -623,21 +635,80 @@ function initClassSchedule() {
     if (nw) nw.disabled = week === home;
   }
 
+  /* —— 周次切换：整块滑动 ——
+     旧的一层（克隆）朝反方向滑出，新的一层从切换方向滑入。只有 2 个合成层，
+     比"几十个格子各自 transform/opacity"稳得多（用户 2026-10-10：「切换动画卡卡的」）。
+     网格外层 #tt-grid-wrap 负责裁剪(overflow:hidden)与高度过渡，滑动期间被撑到两层的较高者。 */
+  var SLIDE_MS = 380;
+  /* 清掉上一次滑动的残留（克隆层、定时器、类），可连续点击而不叠加。 */
+  function clearSlide() {
+    var wrap = document.getElementById("tt-grid-wrap");
+    if (!wrap) return null;
+    [].slice.call(wrap.querySelectorAll(".tt-grid-old")).forEach(function (n) {
+      if (n.parentNode) n.parentNode.removeChild(n);
+    });
+    if (wrap.__ttSlide) { clearTimeout(wrap.__ttSlide); wrap.__ttSlide = 0; }
+    if (wrap.__ttH2) { clearTimeout(wrap.__ttH2); wrap.__ttH2 = 0; }
+    var g = document.getElementById("tt-grid");
+    if (g) g.classList.remove("tt-slide-in-next", "tt-slide-in-prev");
+    wrap.style.height = "";
+    return wrap;
+  }
+  /* 在 render() 之前调用：把"旧的一周"整个克隆出来盖在原位，作为滑出的那一层。 */
+  function snapshotGrid() {
+    var grid = document.getElementById("tt-grid");
+    var wrap = clearSlide();
+    if (!grid || !wrap || !grid.children.length) return null;
+    var h = grid.offsetHeight;
+    var clone = grid.cloneNode(true);
+    clone.removeAttribute("id");                       // 去掉 id：别让它被 #tt-grid 选择器命中/被事件委托抓到
+    clone.setAttribute("aria-hidden", "true");
+    clone.classList.add("tt-grid-old");
+    [].slice.call(clone.querySelectorAll("[tabindex]")).forEach(function (n) {
+      n.removeAttribute("tabindex");                   // 420ms 内别让 Tab 落进两份重复内容
+    });
+    wrap.appendChild(clone);
+    return { el: clone, h: h };
+  }
+  /* render() 之后调用：新层滑入 + 旧层滑出，到点收尾。 */
+  function playSlide(dir, snap) {
+    var grid = document.getElementById("tt-grid");
+    var wrap = document.getElementById("tt-grid-wrap");
+    if (!grid || !wrap || !snap) return;
+    var newH = grid.offsetHeight;
+    wrap.style.height = Math.max(snap.h, newH) + "px";  // auto → px 不参与过渡，瞬时生效
+    void grid.offsetWidth;                              // 强制重排：同方向连点也能重播
+    grid.classList.add(dir > 0 ? "tt-slide-in-next" : "tt-slide-in-prev");
+    snap.el.classList.add(dir > 0 ? "tt-slide-out-next" : "tt-slide-out-prev");
+    if (wrap.__ttSlide) clearTimeout(wrap.__ttSlide);
+    wrap.__ttSlide = setTimeout(function () {
+      wrap.__ttSlide = 0;
+      grid.classList.remove("tt-slide-in-next", "tt-slide-in-prev");
+      if (snap.el.parentNode) snap.el.parentNode.removeChild(snap.el);
+      wrap.style.height = newH + "px";                  // px → px，走 height 过渡，收尾不跳
+      if (wrap.__ttH2) clearTimeout(wrap.__ttH2);
+      wrap.__ttH2 = setTimeout(function () { wrap.__ttH2 = 0; wrap.style.height = ""; }, 300);
+    }, SLIDE_MS);
+  }
+
   function setWeek(w, opts) {
     var max = DATA.meta.totalWeeks || 19;
     if (w < 1) w = 1;
     if (w > max) w = max;
     var dir = w > week ? 1 : w < week ? -1 : 0;
+    // 首屏初始化（silent）与"原地不动"不播动画
+    var animate = dir !== 0 && !(opts && opts.silent) && !reduceMotion();
+    var snap = null;
+    if (animate) snap = snapshotGrid(); else clearSlide();
     week = w;
     var sel = document.getElementById("tt-select");
     if (sel) sel.value = w;
     render();
     syncControls();
-    // 首屏初始化（silent）与"原地不动"不播动画
-    if (!dir || (opts && opts.silent) || reduceMotion()) return;
+    if (!animate) return;
     var cls = dir > 0 ? "tt-anim-next" : "tt-anim-prev";
+    playSlide(dir, snap);
     // holdMs 要盖住"最长延迟 + 动画时长"，到点自动摘类（见 replay 注释）
-    replay(document.getElementById("tt-grid"), cls, 760);
     replay(document.getElementById("tt-changes"), cls, 820);
     replay(document.getElementById("tt-week"), cls, 540);
   }
