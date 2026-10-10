@@ -6,6 +6,8 @@ tags:
   - 小技巧
 category: agent
 slug: idea-headless-inspection
+series: 写代码中获得的经验
+seriesOrder: 1
 comment: true
 ---
 

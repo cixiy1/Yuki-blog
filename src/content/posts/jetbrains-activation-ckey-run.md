@@ -8,6 +8,8 @@ tags:
   - 效率工具
 category: 工具
 slug: jetbrains-activation-ckey-run
+series: 干货
+seriesOrder: 1
 author: 腾讯云开发者社区
 sourceLink: "https://cloud.tencent.com/developer/article/2532994"
 licenseName: "转载"

@@ -9,6 +9,8 @@ tags:
   - 费用
 category: 校园
 slug: software-2615-textbooks
+series: 班级事务
+seriesOrder: 3
 comment: true
 ---
 
