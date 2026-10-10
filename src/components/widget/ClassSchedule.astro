@@ -88,36 +88,65 @@
     .tt-nt-none{color:var(--tt-tx2);opacity:.8;font-size:12px}
 
     /* ===== 交互反馈：按钮 / 周次切换 / 详情面板（2026-10-10）===== */
-    /* 按钮：悬停描边、按下回弹、键盘焦点环、到达边界置灰 */
+    /* —— 按钮：悬停描边 + 方向箭头位移 + 按下回弹 + 点击涟漪 + 键盘焦点环 + 边界置灰 —— */
     .tt-bar button,.tt-bar select{transition:border-color .18s ease,background-color .18s ease,color .18s ease,box-shadow .18s ease,transform .12s cubic-bezier(.22,.61,.36,1)}
+    .tt-bar button{position:relative;overflow:hidden}
+    .tt-bar button>*{position:relative;z-index:1}
     .tt-bar button:hover,.tt-bar select:hover{border-color:var(--tt-on-bd)}
+    .tt-bar button:hover{box-shadow:0 1px 6px var(--tt-hover-sh)}
     .tt-bar button:active:not(:disabled){transform:translateY(1px) scale(.96)}
     .tt-bar button:focus-visible,.tt-bar select:focus-visible{outline:2px solid var(--tt-today-bd);outline-offset:1px}
     .tt-bar button:disabled{opacity:.42;cursor:not-allowed}
-    .tt-bar button:disabled:hover{border-color:var(--tt-line)}
-    /* 单元格：悬停抬起、按下回弹（今日格保留内描边） */
+    .tt-bar button:disabled:hover{border-color:var(--tt-line);box-shadow:none}
+    .tt-ar{display:inline-block;transition:transform .2s cubic-bezier(.22,.61,.36,1)}
+    #tt-prev:hover:not(:disabled) .tt-ar{transform:translateX(-3px)}
+    #tt-next:hover:not(:disabled) .tt-ar{transform:translateX(3px)}
+    .tt-ripple{position:absolute;border-radius:50%;pointer-events:none;background:currentColor;opacity:.2;transform:scale(0);z-index:0;animation:tt-ripple .52s cubic-bezier(.22,.61,.36,1) forwards}
+    @keyframes tt-ripple{to{transform:scale(2.6);opacity:0}}
+
+    /* —— 单元格：悬停抬起、按下回弹（今日格保留内描边）、选中脉冲环 —— */
     .tt-cell[data-id]{transition:transform .14s cubic-bezier(.22,.61,.36,1),box-shadow .18s ease}
     .tt-cell[data-id]:hover{box-shadow:0 1px 6px var(--tt-hover-sh)}
     .tt-cell[data-id]:active{transform:translateY(1px) scale(.985)}
     .tt-cell.is-today[data-id]:hover{box-shadow:inset 0 0 0 2px var(--tt-today-bd),0 1px 6px var(--tt-hover-sh)}
-    /* 详情关闭按钮 */
+    .tt-cell.is-sel{animation:tt-ring .52s ease-out backwards}
+    @keyframes tt-ring{0%{box-shadow:0 0 0 0 rgba(91,141,239,.55)}100%{box-shadow:0 0 0 9px rgba(91,141,239,0)}}
+
+    /* —— 详情关闭按钮 —— */
     .tt-dclose{transition:background-color .15s ease,color .15s ease,transform .12s ease}
     .tt-dclose:active{transform:scale(.88)}
-    /* 周次切换：按方向滑入；周号轻弹 */
-    .tt-anim-next{animation:tt-week-next .28s cubic-bezier(.22,.61,.36,1) both}
-    .tt-anim-prev{animation:tt-week-prev .28s cubic-bezier(.22,.61,.36,1) both}
-    @keyframes tt-week-next{from{opacity:0;transform:translateX(14px)}to{opacity:1;transform:none}}
-    @keyframes tt-week-prev{from{opacity:0;transform:translateX(-14px)}to{opacity:1;transform:none}}
+
+    /* —— 周次切换（四组动画各管一段，别再退回"整块一起滑"）—— */
+    /* 1) 网格：格子/时段/星期按对角线依次入场（--tt-d 由 render 写入）*/
+    #tt-grid.tt-anim-next .tt-cell,#tt-grid.tt-anim-next .tt-sl,#tt-grid.tt-anim-next .tt-dh{animation:tt-in-next .4s cubic-bezier(.22,.61,.36,1) backwards;animation-delay:calc(var(--tt-d,0) * 16ms)}
+    #tt-grid.tt-anim-prev .tt-cell,#tt-grid.tt-anim-prev .tt-sl,#tt-grid.tt-anim-prev .tt-dh{animation:tt-in-prev .4s cubic-bezier(.22,.61,.36,1) backwards;animation-delay:calc(var(--tt-d,0) * 16ms)}
+    @keyframes tt-in-next{from{opacity:0;transform:translate3d(12px,4px,0) scale(.96)}to{opacity:1;transform:none}}
+    @keyframes tt-in-prev{from{opacity:0;transform:translate3d(-12px,4px,0) scale(.96)}to{opacity:1;transform:none}}
+    /* 2) 周号：按方向翻滚；日期随后淡入 */
     #tt-week b{display:inline-block}
-    #tt-week.tt-anim-next b,#tt-week.tt-anim-prev b{animation:tt-num-pop .3s cubic-bezier(.22,.61,.36,1) both}
-    @keyframes tt-num-pop{0%{transform:translateY(5px);opacity:.25}100%{transform:none;opacity:1}}
-    /* 详情面板：展开 / 换课时的短促上浮 */
-    .tt-detail-anim{animation:tt-detail-in .22s cubic-bezier(.22,.61,.36,1) both}
-    @keyframes tt-detail-in{from{opacity:0;transform:translateY(-5px)}to{opacity:1;transform:none}}
+    #tt-week.tt-anim-next b{animation:tt-roll-up .38s cubic-bezier(.22,.61,.36,1) backwards}
+    #tt-week.tt-anim-prev b{animation:tt-roll-down .38s cubic-bezier(.22,.61,.36,1) backwards}
+    @keyframes tt-roll-up{from{opacity:0;transform:translateY(13px) scale(.9)}to{opacity:1;transform:none}}
+    @keyframes tt-roll-down{from{opacity:0;transform:translateY(-13px) scale(.9)}to{opacity:1;transform:none}}
+    #tt-week.tt-anim-next .tt-wdate,#tt-week.tt-anim-prev .tt-wdate{animation:tt-fade-in .42s ease backwards;animation-delay:70ms}
+    #tt-week.tt-anim-next .tt-now,#tt-week.tt-anim-prev .tt-now{animation:tt-fade-in .42s ease backwards;animation-delay:120ms}
+    @keyframes tt-fade-in{from{opacity:0}to{opacity:1}}
+    /* 3) 「本周调整」面板：上浮入场 + 逐条淡入 */
+    #tt-changes.tt-anim-next,#tt-changes.tt-anim-prev{animation:tt-panel-in .34s cubic-bezier(.22,.61,.36,1) backwards}
+    @keyframes tt-panel-in{from{opacity:0;transform:translateY(-7px)}to{opacity:1;transform:none}}
+    #tt-changes.tt-anim-next li,#tt-changes.tt-anim-prev li{animation:tt-fade-in .34s ease backwards;animation-delay:calc(var(--tt-d,0) * 34ms)}
+    /* 4) 详情面板：弹性展开 + 字段行级联 */
+    .tt-detail-anim{animation:tt-detail-in .3s cubic-bezier(.22,.61,.36,1) backwards}
+    @keyframes tt-detail-in{from{opacity:0;transform:translateY(-9px) scale(.985)}to{opacity:1;transform:none}}
+    .tt-detail-anim .tt-dbody>div{animation:tt-fade-in .3s ease backwards;animation-delay:calc(var(--tt-d,0) * 30ms)}
+    .tt-detail-anim .tt-dnote{animation:tt-fade-in .36s ease backwards;animation-delay:.14s}
+
     @media (prefers-reduced-motion:reduce){
-      .tt-anim-next,.tt-anim-prev,.tt-detail-anim{animation:none!important}
-      #tt-week.tt-anim-next b,#tt-week.tt-anim-prev b{animation:none!important}
-      .tt-bar button,.tt-bar select,.tt-cell[data-id],.tt-dclose{transition:none!important}
+      #tt-grid.tt-anim-next *,#tt-grid.tt-anim-prev *,#tt-week.tt-anim-next *,#tt-week.tt-anim-prev *,
+      #tt-changes.tt-anim-next,#tt-changes.tt-anim-prev,#tt-changes.tt-anim-next li,#tt-changes.tt-anim-prev li,
+      .tt-detail-anim,.tt-detail-anim *,.tt-cell.is-sel,.tt-ripple{animation:none!important}
+      .tt-bar button,.tt-bar select,.tt-cell[data-id],.tt-dclose,.tt-ar{transition:none!important}
+      .tt-ripple{display:none}
     }
   </style>
   <div class="tt-panel tt-notices-panel">
@@ -127,10 +156,10 @@
   <div class="tt-panel">
     <div class="tt-top"><span class="tt-title">软件2615 课表</span><span class="tt-sub">北校区 · 2026-2027 学年第 1 学期</span></div>
     <div class="tt-bar">
-      <button id="tt-prev" type="button">← 上一周</button>
+      <button id="tt-prev" type="button"><i class="tt-ar">←</i> <span>上一周</span></button>
       <div id="tt-week" aria-live="polite"></div>
-      <button id="tt-next" type="button">下一周 →</button>
-      <button id="tt-today" type="button">回到本周</button>
+      <button id="tt-next" type="button"><span>下一周</span> <i class="tt-ar">→</i></button>
+      <button id="tt-today" type="button"><span>回到本周</span></button>
       <select id="tt-select" aria-label="选择周次"></select>
     </div>
     <div id="tt-grid" class="tt-grid"></div>
@@ -384,8 +413,8 @@ function initClassSchedule() {
     });
     return '<div class="tt-dtop"><span class="tt-dname">' + esc(e.name || e.short) +
       '</span><button type="button" class="tt-dclose" data-close="1" aria-label="关闭详情">×</button></div>' +
-      '<div class="tt-dbody">' + rows.map(function (r) {
-        return "<div><b>" + r[0] + "</b><span>" + r[1] + "</span></div>";
+      '<div class="tt-dbody">' + rows.map(function (r, di) {
+        return '<div style="--tt-d:' + di + '"><b>' + r[0] + "</b><span>" + r[1] + "</span></div>";
       }).join("") + "</div>" +
       (notes.length ? '<div class="tt-dnote">' + notes.join("<br>") + "</div>" : "");
   }
@@ -414,21 +443,22 @@ function initClassSchedule() {
     for (var d = 1; d <= maxDay; d++) {
       var dd = new Date(mon.getTime());
       dd.setDate(dd.getDate() + d - 1);
-      html += '<span class="tt-dh' + (isNow && d === todayIdx ? " is-today" : "") + '">' +
+      html += '<span class="tt-dh' + (isNow && d === todayIdx ? " is-today" : "") + '" style="--tt-d:' + d + '">' +
         DAYS[d - 1] + '<em>' + fmt(dd) + "</em></span>";
     }
     html += "</div>";
 
     var rows = buildRows();
-    rows.forEach(function (row) {
+    // ri = 行序：与列序相加得到对角线级联延迟（--tt-d），供周次切换的入场动画使用
+    rows.forEach(function (row, ri) {
       var sk = row.key;
       var st = slotInfo(sk);
-      html += '<div class="tt-row"><i class="tt-sl">' + (st.label || sk) +
+      html += '<div class="tt-row"><i class="tt-sl" style="--tt-d:' + ri + '">' + (st.label || sk) +
         "<em>" + (st.time || "") + "</em></i>";
       for (var d = 1; d <= maxDay; d++) {
         var cell = null;
         res.entries.forEach(function (e) { if (e.day === d && e.slot === sk) cell = e; });
-        if (!cell) { html += '<div class="tt-cell is-empty"></div>'; continue; }
+        if (!cell) { html += '<div class="tt-cell is-empty" style="--tt-d:' + (ri + d) + '"></div>'; continue; }
         var cls = "tt-cell " + (cell.cancelled ? "is-cancel" : cell.selfStudy ? "is-study" : cell.active ? (cell.temp ? "is-add" : "is-on") : "is-off");
         var flag = "";
         if (cell.changes.length) {
@@ -444,7 +474,7 @@ function initClassSchedule() {
         var timeBadge = (tt && tt !== st.time) ? '<span class="tt-time">' + esc(tt) + "</span>" : "";
         html += '<div class="' + cls + (isNow && d === todayIdx ? " is-today" : "") +
           (cell.id === selId ? " is-sel" : "") +
-          '" data-id="' + esc(cell.id) + '" tabindex="0" role="button"' +
+          '" style="--tt-d:' + (ri + d) + '" data-id="' + esc(cell.id) + '" tabindex="0" role="button"' +
           ' aria-label="' + esc(cell.name + " 详情") + '" title="' + esc(tip) + '"><b>' +
           esc(cell.short) + "</b>" +
           (cell.room ? "<span>" + esc(cell.room) + "</span>" : "") + timeBadge + flag + "</div>";
@@ -477,8 +507,8 @@ function initClassSchedule() {
       if (!chg.length) { box.innerHTML = ""; box.className = "tt-changes is-empty"; }
       else {
         box.className = "tt-changes";
-        box.innerHTML = '<h4>本周调整<span class="tt-chg-n">共 ' + chg.length + " 条</span></h4><ul>" + chg.map(function (c) {
-          return '<li class="li-' + c.t + '">' + esc(c.txt) + "</li>";
+        box.innerHTML = '<h4>本周调整<span class="tt-chg-n">共 ' + chg.length + " 条</span></h4><ul>" + chg.map(function (c, ci) {
+          return '<li class="li-' + c.t + '" style="--tt-d:' + ci + '">' + esc(c.txt) + "</li>";
         }).join("") + "</ul>";
       }
     }
@@ -539,17 +569,34 @@ function initClassSchedule() {
     }).join("");
   }
 
-  /* 重播一次 CSS 动画：先摘类再强制重排，末尾自动清理，避免 animation-fill 永久覆盖交互态。 */
-  function replay(el, cls) {
+  /* 重播一次 CSS 动画：先摘类再强制重排，再用定时器清理。
+     · 必须"摘类 → 重排 → 加类"，否则同方向连续切换不会重播；
+     · 必须清理，否则类会常驻、fill 会永久覆盖 :active 等交互态；
+     · 用定时器而非 animationend：多数动画挂在子元素上（格子波浪），
+       grid 自身没有动画 → animationend 永远不会以它为目标。 */
+  function replay(el, cls, holdMs) {
     if (!el) return;
     el.classList.remove("tt-anim-next", "tt-anim-prev", "tt-detail-anim");
     void el.offsetWidth; // 强制重排 → 动画能重新触发
     el.classList.add(cls);
-    el.addEventListener("animationend", function handler(ev) {
-      if (ev.target !== el) return; // 只认自己的动画（子元素会冒泡上来）
+    if (el.__ttTimer) clearTimeout(el.__ttTimer);
+    el.__ttTimer = setTimeout(function () {
       el.classList.remove(cls);
-      el.removeEventListener("animationend", handler);
-    });
+      el.__ttTimer = 0;
+    }, holdMs || 600);
+  }
+  /* 按钮点击涟漪：在按点位置生成一个扩散淡出的圆。 */
+  function ripple(btn, ev) {
+    if (!btn || reduceMotion()) return;
+    var r = btn.getBoundingClientRect();
+    var size = Math.max(r.width, r.height);
+    var sp = document.createElement("span");
+    sp.className = "tt-ripple";
+    sp.style.width = sp.style.height = size + "px";
+    sp.style.left = ((ev && ev.clientX ? ev.clientX : r.left + r.width / 2) - r.left - size / 2) + "px";
+    sp.style.top = ((ev && ev.clientY ? ev.clientY : r.top + r.height / 2) - r.top - size / 2) + "px";
+    btn.appendChild(sp);
+    setTimeout(function () { if (sp.parentNode) sp.parentNode.removeChild(sp); }, 560);
   }
   function reduceMotion() {
     return !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
@@ -579,9 +626,10 @@ function initClassSchedule() {
     // 首屏初始化（silent）与"原地不动"不播动画
     if (!dir || (opts && opts.silent) || reduceMotion()) return;
     var cls = dir > 0 ? "tt-anim-next" : "tt-anim-prev";
-    replay(document.getElementById("tt-grid"), cls);
-    replay(document.getElementById("tt-changes"), cls);
-    replay(document.getElementById("tt-week"), cls);
+    // holdMs 要盖住"最长延迟 + 动画时长"，到点自动摘类（见 replay 注释）
+    replay(document.getElementById("tt-grid"), cls, 760);
+    replay(document.getElementById("tt-changes"), cls, 820);
+    replay(document.getElementById("tt-week"), cls, 540);
   }
 
   fetch(DATA_URL, { cache: "no-store" })
@@ -602,7 +650,11 @@ function initClassSchedule() {
       var nw = document.getElementById("tt-today");
       if (pv) pv.addEventListener("click", function () { setWeek(week - 1); });
       if (nx) nx.addEventListener("click", function () { setWeek(week + 1); });
-      if (nw) nw.addEventListener("click", function () { setWeek(realWeek); });
+      if (nw) nw.addEventListener("click", function () { setWeek(realWeek >= 1 ? realWeek : 1); });
+      // 点击涟漪：三个按钮各绑一次（disabled 的按钮不会触发 click）
+      [pv, nx, nw].forEach(function (b) {
+        if (b) b.addEventListener("click", function (ev) { ripple(b, ev); });
+      });
       var gridEl = document.getElementById("tt-grid");
       if (gridEl) {
         var pick = function (ev) {
@@ -613,8 +665,8 @@ function initClassSchedule() {
           if (!id) return;
           selId = id === selId ? null : id;
           render();
-          // 详情面板展开/换课时的上浮反馈（切换课节时也会重播）
-          if (selId && !reduceMotion()) replay(document.getElementById("tt-detail"), "tt-detail-anim");
+          // 详情面板展开/换课时的弹入反馈（切换课节时也会重播）
+          if (selId && !reduceMotion()) replay(document.getElementById("tt-detail"), "tt-detail-anim", 620);
         };
         gridEl.addEventListener("click", pick);
         gridEl.addEventListener("keydown", function (ev) {
