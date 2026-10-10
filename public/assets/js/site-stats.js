@@ -6,6 +6,16 @@
  *     site / site_YYYY-MM-DD             站点总浏览量 / 当日浏览量
  *     p_<id>                             单篇文章阅读量（id 见 src/utils/stats-utils.ts）
  *     visits / visits_YYYY-MM-DD         站点总访客数 / 当日访客数（浏览器本地去重）
+ *     hits / hits_YYYY-MM-DD             站点总访问人次 / 当日访问人次（**完全不去重**）
+ * - ⚠️ 三种「量」的口径必须分清，别互相比较（2026-10-10 用户问「单周访客比总访客还多」）：
+ *     · 浏览量 site       —— 页面被打开的次数（同一页面 dedupeMinutes 内重复打开只计一次），
+ *                            且 site 与 site_<d> 是同一次 record 里一起 +1 的，故 Σ site_<d> ≡ site；
+ *     · 访客去重 visits   —— 由于「去重基线不同」，**总量与单日/单周不可比**：
+ *                            总量按「浏览器永久去重」（LS_UV_ONCE，一辈子只 +1）；
+ *                            当日按「浏览器当天去重」（LS_UV_DAY，同一天只 +1）；
+ *                            单周 = Σ 每日去重值 ⇒ 同一人跨天访问会被重复计入，
+ *                            因此 **单周「去重访客」可以大于「总访客数」**，这是口径差异不是 bug。
+ *     · 人次 hits         —— 每次打开页面都 +1（仅受 record() 里 2 秒防抖保护），用来和去重值对照。
  * - 该接口限流 30 次 / 10 秒 / IP，所以所有请求走同一个串行队列，按最小间隔排队。
  * - 只依赖 window.__YUKI_STATS__（由 Layout.astro 注入），不引入任何第三方库。
  * - 在 Swup 站内跳转下会重复触发，内部做了同一路径 2 秒内去重 + 可配置的分钟级去重。
@@ -13,8 +23,8 @@
  * 对外 API：window.YukiStats
  *   ready                    （属性）最近一次「记录」完成的 Promise，进入 /stats 前先 await
  *   record()                 手动触发一次记录
- *   getSiteTotals()          → {pv, uv, pvToday, uvToday, date}
- *   getWeekTotals()          → {pvWeek, uvWeek, weekStart, weekEnd, days}  本周一至今
+ *   getSiteTotals()          → {pv, uv, pvToday, uvToday, hitsToday, date}
+ *   getWeekTotals()          → {pvWeek, uvWeek, hitsWeek, weekStart, weekEnd, days}  本周一至今
  *   getDaySeries(days, cb)   → {dates, values}  历史天数永久缓存，只重取「今天」
  *   getPostValues(ids, cb)   → {values, cached} 按 id 批量取，带缓存
  *   formatNumber(n)          数字格式化（1.2w）
@@ -136,6 +146,13 @@
 		},
 		uvDay: function (d) {
 			return "visits_" + d;
+		},
+		// 「人次」：完全不去重，每次打开页面都 +1（与 visits* 成对展示用）
+		hits: function () {
+			return "hits";
+		},
+		hitsDay: function (d) {
+			return "hits_" + d;
 		}
 	};
 
@@ -383,15 +400,23 @@
 		lastPath = path;
 		lastPathAt = now;
 
+		var today = todayStr();
+
+		// 「访问人次」（未去重）：只要真的打开了一次页面就 +1，**故意放在 30 分钟同页去重之前**，
+		// 否则它就退化成和浏览量同口径了。刷新一次就多一次，这是预期行为（它的用途就是和
+		// 「访客数（去重）」对照）。只受上面那个 2 秒防抖保护，用来挡 Swup 的同一次导航抖动。
+		var rawJobs = Promise.all([hit(K.hits()), hit(K.hitsDay(today))]);
+
 		var ssKey = SS_PV + path;
 		var prev = Number(storeGet(sessionStorage, ssKey) || 0);
 		if (DEDUPE > 0 && prev && now - prev < DEDUPE * 60000) {
-			log("skip: 去重窗口内", path);
-			return finishBadges(ids, null);
+			log("skip: 去重窗口内（只计人次）", path);
+			return rawJobs.then(function () {
+				return finishBadges(ids, null);
+			});
 		}
 		storeSet(sessionStorage, ssKey, String(now));
 
-		var today = todayStr();
 		var jobs = [hit(K.site()), hit(K.siteDay(today))];
 		for (var i = 0; i < ids.length; i++) jobs.push(hit(K.post(ids[i])));
 
@@ -405,7 +430,9 @@
 		}
 
 		log("record", path, ids);
-		return Promise.all(jobs).then(function (res) {
+		// 两批分开等：jobs 的下标 2 起是各篇文章的阅读量，不能被 rawJobs 挤掉
+		return Promise.all([rawJobs, Promise.all(jobs)]).then(function (r) {
+			var res = r[1];
 			var live = {};
 			for (var j = 0; j < ids.length; j++) live[ids[j]] = valueOf(res[2 + j]);
 			return finishBadges(ids, live);
@@ -422,14 +449,16 @@
 			get(K.site()),
 			get(K.uv()),
 			get(K.siteDay(today)),
-			get(K.uvDay(today))
+			get(K.uvDay(today)),
+			get(K.hitsDay(today))
 		]).then(function (res) {
 			return {
 				date: today,
 				pv: valueOf(res[0]),
 				uv: valueOf(res[1]),
 				pvToday: valueOf(res[2]),
-				uvToday: valueOf(res[3])
+				uvToday: valueOf(res[3]),
+				hitsToday: valueOf(res[4])
 			};
 		});
 	}
@@ -439,8 +468,11 @@
 	 * 历史天数一旦取到就永久缓存（历史值不会再变），每次只重新取「今天」。
 	 */
 	/**
-	 * 本周（周一至今天，含今天）浏览量 / 访客数。
+	 * 本周（周一至今天，含今天）浏览量 / 访客数 / 访问人次。
 	 * 中文习惯以周一为一周的起点。
+	 * ⚠️ uvWeek 是「每日去重值之和」，不是「本周内去重」——同一人跨天访问会被重复计入，
+	 *    所以它**可以大于总访客数**（详见文件头「三种量的口径」）。要真·本周去重需要另开
+	 *    一个按周去重的计数器，当前按用户要求保持现状、只把口径写在页面小字里。
 	 */
 	function getWeekTotals() {
 		var now = new Date();
@@ -453,24 +485,30 @@
 		}
 		return Promise.all(
 			dates.map(function (d) {
-				return Promise.all([get(K.siteDay(d)), get(K.uvDay(d))]).then(function (r) {
-					return {
-						date: d,
-						pv: valueOf(r[0]) || 0,
-						uv: valueOf(r[1]) || 0
-					};
-				});
+				return Promise.all([get(K.siteDay(d)), get(K.uvDay(d)), get(K.hitsDay(d))]).then(
+					function (r) {
+						return {
+							date: d,
+							pv: valueOf(r[0]) || 0,
+							uv: valueOf(r[1]) || 0,
+							hits: valueOf(r[2]) || 0
+						};
+					}
+				);
 			})
 		).then(function (rows) {
 			var pv = 0;
 			var uv = 0;
+			var hits = 0;
 			for (var j = 0; j < rows.length; j++) {
 				pv += rows[j].pv;
 				uv += rows[j].uv;
+				hits += rows[j].hits;
 			}
 			return {
 				pvWeek: pv,
 				uvWeek: uv,
+				hitsWeek: hits,
 				weekStart: dates[0],
 				weekEnd: dates[dates.length - 1],
 				days: rows

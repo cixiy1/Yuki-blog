@@ -10,7 +10,7 @@
  *
  * DOM 契约（由 src/pages/stats.astro 渲染）：
  *   #stats-root[data-trend-days][data-top-n]
- *   [data-stat="pv|uv|pvToday|uvToday"]  概览数字
+ *   [data-stat="pv|uv|pvToday|uvToday|hitsToday|pvWeek|uvWeek|hitsWeek"]  概览数字
  *   [data-stat="avg"]                    近 N 天日均
  *   [data-stat="total"]                  文章累计阅读量
  *   #stats-trend                         趋势图容器
@@ -79,17 +79,24 @@
 	/* 概览卡片                                                             */
 	/* ------------------------------------------------------------------ */
 
+	/** 取不到的计数器（abacus 返回 404 → null）用「—」占位；0 要照常显示成 0 */
+	function statText(value) {
+		return value === null || value === undefined ? "—" : num(value);
+	}
+
 	function renderOverview() {
 		var weekP = S.getWeekTotals ? S.getWeekTotals() : Promise.resolve(null);
 		return Promise.all([S.getSiteTotals(), weekP]).then(function (res) {
 			var t = res[0] || {};
 			var w = res[1] || {};
-			setText('[data-stat="pv"]', t.pv === null ? "—" : num(t.pv));
-			setText('[data-stat="uv"]', t.uv === null ? "—" : num(t.uv));
-			setText('[data-stat="pvToday"]', t.pvToday === null ? "—" : num(t.pvToday));
-			setText('[data-stat="uvToday"]', t.uvToday === null ? "—" : num(t.uvToday));
-			setText('[data-stat="pvWeek"]', typeof w.pvWeek === "number" ? num(w.pvWeek) : "—");
-			setText('[data-stat="uvWeek"]', typeof w.uvWeek === "number" ? num(w.uvWeek) : "—");
+			setText('[data-stat="pv"]', statText(t.pv));
+			setText('[data-stat="uv"]', statText(t.uv));
+			setText('[data-stat="pvToday"]', statText(t.pvToday));
+			setText('[data-stat="uvToday"]', statText(t.uvToday));
+			setText('[data-stat="hitsToday"]', statText(t.hitsToday));
+			setText('[data-stat="pvWeek"]', statText(w.pvWeek));
+			setText('[data-stat="uvWeek"]', statText(w.uvWeek));
+			setText('[data-stat="hitsWeek"]', statText(w.hitsWeek));
 			var root = el("stats-root");
 			if (root) root.setAttribute("data-overview", "1");
 		});

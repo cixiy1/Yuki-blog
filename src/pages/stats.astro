@@ -51,7 +51,7 @@ const posts = enabled ? await getStatsPostList() : [];
                       <span class="sp-card-label text-neutral-500 dark:text-neutral-400">总访客数</span>
                     </div>
                     <div class="sp-card-value text-neutral-900 dark:text-neutral-100" data-stat="uv">—</div>
-                    <div class="sp-card-sub text-neutral-500 dark:text-neutral-400">浏览器去重</div>
+                    <div class="sp-card-sub text-neutral-500 dark:text-neutral-400">浏览器永久去重</div>
                   </div>
                 </div>
               </section>
@@ -70,10 +70,18 @@ const posts = enabled ? await getStatsPostList() : [];
                   <div class="sp-card">
                     <div class="sp-card-top">
                       <span class="sp-card-icon text-(--primary)"><Icon is:inline name="material-symbols:group" /></span>
-                      <span class="sp-card-label text-neutral-500 dark:text-neutral-400">访客数</span>
+                      <span class="sp-card-label text-neutral-500 dark:text-neutral-400">访客数 · 去重</span>
                     </div>
                     <div class="sp-card-value text-neutral-900 dark:text-neutral-100" data-stat="uvToday">—</div>
-                    <div class="sp-card-sub text-neutral-500 dark:text-neutral-400">截至现在</div>
+                    <div class="sp-card-sub text-neutral-500 dark:text-neutral-400">同一浏览器当日只算一次</div>
+                  </div>
+                  <div class="sp-card">
+                    <div class="sp-card-top">
+                      <span class="sp-card-icon text-(--primary)"><Icon is:inline name="material-symbols:footprint" /></span>
+                      <span class="sp-card-label text-neutral-500 dark:text-neutral-400">访客数 · 未去重</span>
+                    </div>
+                    <div class="sp-card-value text-neutral-900 dark:text-neutral-100" data-stat="hitsToday">—</div>
+                    <div class="sp-card-sub text-neutral-500 dark:text-neutral-400">每次打开都算一次</div>
                   </div>
                 </div>
               </section>
@@ -92,10 +100,18 @@ const posts = enabled ? await getStatsPostList() : [];
                   <div class="sp-card">
                     <div class="sp-card-top">
                       <span class="sp-card-icon text-(--primary)"><Icon is:inline name="material-symbols:group" /></span>
-                      <span class="sp-card-label text-neutral-500 dark:text-neutral-400">访客数</span>
+                      <span class="sp-card-label text-neutral-500 dark:text-neutral-400">访客数 · 去重</span>
                     </div>
                     <div class="sp-card-value text-neutral-900 dark:text-neutral-100" data-stat="uvWeek">—</div>
-                    <div class="sp-card-sub text-neutral-500 dark:text-neutral-400">周一至今</div>
+                    <div class="sp-card-sub text-neutral-500 dark:text-neutral-400">每天各去重后相加</div>
+                  </div>
+                  <div class="sp-card">
+                    <div class="sp-card-top">
+                      <span class="sp-card-icon text-(--primary)"><Icon is:inline name="material-symbols:footprint" /></span>
+                      <span class="sp-card-label text-neutral-500 dark:text-neutral-400">访客数 · 未去重</span>
+                    </div>
+                    <div class="sp-card-value text-neutral-900 dark:text-neutral-100" data-stat="hitsWeek">—</div>
+                    <div class="sp-card-sub text-neutral-500 dark:text-neutral-400">每次打开都算一次</div>
                   </div>
                 </div>
               </section>
@@ -168,8 +184,16 @@ const posts = enabled ? await getStatsPostList() : [];
               正在读取数据…
             </p>
             <p class="sp-note text-black/70 dark:text-white/60">
-              统计由站内计数器在浏览器端完成，不使用 Cookie 追踪，只记录「页面被访问了几次」。
-              加密文章不参与排行；同一页面 {statsConfig.dedupeMinutes} 分钟内的重复访问只计一次。
+              <b>关于「去重」与「未去重」.</b>
+              「浏览量」＝页面被打开的次数（同一页面 {statsConfig.dedupeMinutes} 分钟内重复打开只计一次）；
+              「访客数 · 去重」＝按浏览器去重，其中<b>总计按「浏览器永久去重」</b>（同一浏览器一辈子只算一次），
+              而<b>今日、本周按「每天去重」</b>（同一浏览器同一天只算一次，隔天再来又会算一次），
+              本周的值＝周一至今各天的去重值<b>相加</b>。所以同一个人周一、周三各来一趟，
+              在总访客里是 1，在本周里是 2 —— <b>单周的「去重访客」可以大于「总访客数」</b>，这是两处口径不同，不是数据出错。
+              「访客数 · 未去重」＝访问人次，每次打开页面都记一次（含刷新），只用它与去重值对照。
+            </p>
+            <p class="sp-note text-black/70 dark:text-white/60">
+              统计由站内计数器在浏览器端完成，不使用 Cookie 追踪。加密文章不参与排行。
               更细致的来源、设备与行为分析见站长的 Microsoft Clarity 后台。
             </p>
           </>
