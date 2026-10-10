@@ -45,8 +45,17 @@ export const musicPlayerConfig: MusicPlayerConfig = {
 	// lrc: "/assets/music/lrc/使一颗心免于哀伤-哼唱.lrc",
 	// 2. 或者直接填入歌词字符串内容
 	// lrc: "[00:00.00]歌词内容...",
+	// ⚠️ 歌单第一首＝默认歌曲：MusicManager.astro 的 init() 里 startIndex 取 0
+	//   （仅 playMode 为 random 时才随机），所以要换默认曲目就调整数组顺序。
 	local: {
 		playlist: [
+			{
+				name: "勋章",
+				artist: "鹿晗",
+				url: "/assets/music/xunzhang-luhan.m4a",
+				cover: "/assets/music/cover/xunzhang-luhan.jpg",
+				lrc: "",
+			},
 			{
 				name: "失眠",
 				artist: "Suki刘舒妤",
