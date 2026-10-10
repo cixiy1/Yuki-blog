@@ -15,11 +15,14 @@
     #tt-week{display:flex;align-items:center;gap:8px;font-size:14px}
     .tt-wdate{font-size:12px;color:var(--tt-tx2)}
     .tt-now{font-style:normal;font-size:11px;padding:1px 6px;border-radius:6px;background:var(--tt-on-bg);color:var(--tt-on-tx)}
-    .tt-changes{margin:10px 0;padding:10px 12px;border:1px dashed var(--tt-line);border-radius:10px;background:var(--tt-panel2)}
+    .tt-changes{margin:14px 0 0;padding:10px 12px;border:1px dashed var(--tt-line);border-radius:10px;background:var(--tt-panel2)}
     .tt-changes.is-empty{display:none}
     .tt-h4{font-size:13px;font-weight:500;margin:0 0 6px}
+    .tt-changes h4{font-size:13px;font-weight:500;margin:0 0 6px;display:flex;align-items:baseline;gap:8px}
+    .tt-chg-n{font-size:11px;font-weight:400;color:var(--tt-tx2)}
     .tt-changes ul{margin:0;padding-left:18px}
     .tt-changes li{font-size:12px}
+    .tt-changes li+li{margin-top:2px}
     .tt-grid{display:grid;grid-template-columns:52px repeat(var(--tt-cols,5),minmax(84px,1fr));gap:6px;overflow-x:auto;padding-bottom:2px}
     .tt-row{display:contents}
     .tt-sl{font-size:11px;color:var(--tt-tx2);display:flex;flex-direction:column;justify-content:center;line-height:1.35}
@@ -97,10 +100,10 @@
       <button id="tt-today" type="button">回到本周</button>
       <select id="tt-select" aria-label="选择周次"></select>
     </div>
-    <div id="tt-changes" class="tt-changes is-empty"></div>
     <div id="tt-grid" class="tt-grid"></div>
     <div id="tt-detail" class="tt-detail is-empty"></div>
     <ul id="tt-list" class="tt-list"></ul>
+    <div id="tt-changes" class="tt-changes is-empty"></div>
     <div class="tt-legend"><span><i style="background:var(--tt-on-bg);border:1px solid var(--tt-on-bd)"></i>本周有课</span><span><i style="background:var(--tt-off-bg)"></i>本周不上</span><span><i style="background:var(--tt-f-room-bg)"></i>改地点</span><span><i style="background:var(--tt-f-mv-bg)"></i>调课 / 对调</span><span><i style="background:var(--tt-f-cx-bg)"></i>停课</span><span><i style="background:var(--tt-add-bg);border:1px solid var(--tt-add-bd)"></i>临时新增</span><span><i style="background:var(--tt-study-bg);border:1px solid var(--tt-study-bd)"></i>晚自习</span></div>
     <div class="tt-foot"><span id="tt-meta"></span></div>
     <div class="tt-sec"><div class="tt-h4">北校区作息时间</div><ul id="tt-periods" class="tt-periods"></ul></div>
@@ -244,8 +247,10 @@ function initClassSchedule() {
         e.changes.push({ t: "move", note: ov.note || "", old: oldPos });
       }
     });
-    /* 晚自习：晚上没正课时默认安排（默认 19:00–21:00，占 9-10 节与 11 节两格）。
-       可按「周-星期」用 meta.selfStudy.cellOverrides 覆盖某次晚自习的教室（如 {"6-5":{"room":"修德楼218"}}）。 */
+    /* 晚自习：晚上没正课时默认安排（默认 19:00–20:30，即八点半下课）。
+       - 只有 cellOverrides 里的 end 晚于 20:30（如 {"6-5":{"end":"21:00"}}）才在 11 节行补后半段，占 9-10 + 11 两格。
+       - cellOverrides 用「周-星期」作键，可只覆盖某次的教室（如 {"6-5":{"room":"修德楼218"}}）。
+       - onDays 用 [[周,星期]] 指定某周某天即使不在 days 里也排（如 10/10 周六补周三的课）。 */
     var ss = DATA.meta.selfStudy;
     if (ss && ss.enabled) {
       var off = ss.offWeeks || [];
@@ -253,7 +258,13 @@ function initClassSchedule() {
         var hasClass = entries.some(function (e) { return e.active; });
         if (hasClass) {
           var offDays = ss.offDays || [];
-          (ss.days || [1, 2, 3, 4, 5]).forEach(function (d) {
+          var ssName = ss.name || "晚自习";
+          var HALF = "20:30";           // 9-10 节行的结束时间（当晚前半段）
+          var dayList = (ss.days || [1, 2, 3, 4, 5]).slice();
+          (ss.onDays || []).forEach(function (p) {
+            if (p[0] === w && dayList.indexOf(p[1]) < 0) dayList.push(p[1]);
+          });
+          dayList.forEach(function (d) {
             var offDay = offDays.some(function (p) { return p[0] === w && p[1] === d; });
             if (offDay) return;
             var occupied = entries.some(function (e) {
@@ -262,22 +273,25 @@ function initClassSchedule() {
             });
             if (!occupied) {
               var co = (ss.cellOverrides && ss.cellOverrides[w + "-" + d]) || null;
+              var ssEnd = (co && co.end) || ss.end || HALF;   // 本次晚自习实际结束时间
               entries.push({
                 id: "selfstudy-d" + d, day: d, slot: ss.slot,
-                name: ss.name || "晚自习", short: ss.short || ss.name || "晚自习",
+                name: ssName, short: ssName,
                 room: (co && co.room) || "", teacher: "", weeks: String(w),
                 active: true, cancelled: false, temp: false,
                 selfStudy: true, changes: [],
-                startTime: ss.start || "19:00", endTime: "20:30"
+                startTime: ss.start || "19:00", endTime: ssEnd > HALF ? HALF : ssEnd
               });
-              entries.push({
-                id: "selfstudy-d" + d + "-11", day: d, slot: "11",
-                name: ss.name || "晚自习", short: ss.short || ss.name || "晚自习",
-                room: (co && co.room) || "", teacher: "", weeks: String(w),
-                active: true, cancelled: false, temp: false,
-                selfStudy: true, changes: [],
-                startTime: "20:30", endTime: (co && co.end) || ss.end || "21:00"
-              });
+              if (ssEnd > HALF) {
+                entries.push({
+                  id: "selfstudy-d" + d + "-11", day: d, slot: "11",
+                  name: ssName, short: ssName,
+                  room: (co && co.room) || "", teacher: "", weeks: String(w),
+                  active: true, cancelled: false, temp: false,
+                  selfStudy: true, changes: [],
+                  startTime: HALF, endTime: ssEnd
+                });
+              }
             }
           });
         }
@@ -430,7 +444,7 @@ function initClassSchedule() {
       if (!chg.length) { box.innerHTML = ""; box.className = "tt-changes is-empty"; }
       else {
         box.className = "tt-changes";
-        box.innerHTML = "<h4>本周调整</h4><ul>" + chg.map(function (c) {
+        box.innerHTML = '<h4>本周调整<span class="tt-chg-n">共 ' + chg.length + " 条</span></h4><ul>" + chg.map(function (c) {
           return '<li class="li-' + c.t + '">' + esc(c.txt) + "</li>";
         }).join("") + "</ul>";
       }
