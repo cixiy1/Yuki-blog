@@ -5,7 +5,7 @@ draft: false
 order: 80
 description: "面向学校多媒体设备（老式 Windows 台式机、希沃一体机）的互联系统：实时机况检测、服务端远程介入与教学资源多端共享。"
 image: "https://opengraph.githubassets.com/1/Lixixy/EduSync"
-status: "developing"
+status: "archived"
 tags:
   - Vue
   - Python
