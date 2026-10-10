@@ -9,7 +9,7 @@ tags:
   - 组队
 category: 校园
 slug: software-2615-huawei-teams
-series: 班级事务
+series: 软件2615 班务
 seriesOrder: 6
 comment: false
 ---

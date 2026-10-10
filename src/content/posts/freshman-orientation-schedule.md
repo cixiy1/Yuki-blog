@@ -8,7 +8,7 @@ tags:
   - 人工智能学院
 category: 校园
 slug: freshman-orientation-schedule
-series: 班级事务
+series: 软件2615 班务
 seriesOrder: 1
 comment: true
 ---
