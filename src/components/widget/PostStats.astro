@@ -139,7 +139,7 @@ const statsId = current ? getStatsId(removeFileExtension(current.id)) : "";
 				{/* 阅读量：数字由 site-stats.js 填，取不到就一直隐藏 */}
 				<div
 					id="post-stats-read"
-					class="flex items-center justify-between px-3 py-2 rounded-lg bg-neutral-100/60 dark:bg-neutral-800/50"
+					class="flex items-center justify-between px-3 py-2 rounded-lg"
 					style="display:none"
 					data-post-stats
 					data-stats-id={current ? statsId : undefined}
@@ -165,7 +165,7 @@ const statsId = current ? getStatsId(removeFileExtension(current.id)) : "";
 
 				{rowDefs.map((row) => (
 					<div
-						class="flex items-center justify-between px-3 py-2 rounded-lg bg-neutral-100/60 dark:bg-neutral-800/50"
+						class="flex items-center justify-between px-3 py-2 rounded-lg"
 						data-key={row.key}
 						style={row.value ? "" : "display:none"}
 					>
