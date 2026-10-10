@@ -34,20 +34,20 @@
     .tt-cell b{font-weight:500;font-size:13px}
     .tt-cell span{font-size:11px;margin-top:2px;opacity:.85;word-break:break-all}
     .tt-time{margin-top:3px;opacity:.7;font-variant-numeric:tabular-nums;letter-spacing:.2px}
-    .is-on{background:var(--tt-on-bg);border-color:var(--tt-on-bd);color:var(--tt-on-tx)}
-    .is-off{background:var(--tt-off-bg);color:var(--tt-off-tx)}
-    .is-add{background:var(--tt-add-bg);border-color:var(--tt-add-bd);color:var(--tt-add-tx)}
-    .is-study{background:var(--tt-study-bg);border-color:var(--tt-study-bd);color:var(--tt-study-tx)}
-    .is-cancel{background:var(--tt-cx-bg);color:var(--tt-cx-tx)}
-    .is-cancel b{text-decoration:line-through}
-    .is-empty{background:transparent}
+    .tt-root .is-on{background:var(--tt-on-bg);border-color:var(--tt-on-bd);color:var(--tt-on-tx)}
+    .tt-root .is-off{background:var(--tt-off-bg);color:var(--tt-off-tx)}
+    .tt-root .is-add{background:var(--tt-add-bg);border-color:var(--tt-add-bd);color:var(--tt-add-tx)}
+    .tt-root .is-study{background:var(--tt-study-bg);border-color:var(--tt-study-bd);color:var(--tt-study-tx)}
+    .tt-root .is-cancel{background:var(--tt-cx-bg);color:var(--tt-cx-tx)}
+    .tt-root .is-cancel b{text-decoration:line-through}
+    .tt-root .is-empty{background:transparent}
     .tt-cell.is-today{box-shadow:inset 0 0 0 2px var(--tt-today-bd)}
     .tt-flag{position:absolute;top:4px;right:4px;font-size:9px;text-decoration:none;border-radius:4px;padding:0 4px;line-height:14px}
-    .f-room{background:var(--tt-f-room-bg);color:var(--tt-f-room)}
-    .f-move,.f-swap{background:var(--tt-f-mv-bg);color:var(--tt-f-mv)}
-    .f-cancel{background:var(--tt-f-cx-bg);color:var(--tt-f-cx)}
-    .f-add{background:var(--tt-f-add-bg);color:var(--tt-f-add)}
-    .f-off{background:transparent;border:1px solid currentColor;opacity:.7}
+    .tt-root .f-room{background:var(--tt-f-room-bg);color:var(--tt-f-room)}
+    .tt-root .f-move,.tt-root .f-swap{background:var(--tt-f-mv-bg);color:var(--tt-f-mv)}
+    .tt-root .f-cancel{background:var(--tt-f-cx-bg);color:var(--tt-f-cx)}
+    .tt-root .f-add{background:var(--tt-f-add-bg);color:var(--tt-f-add)}
+    .tt-root .f-off{background:transparent;border:1px solid currentColor;opacity:.7}
     .tt-list{display:none;list-style:none;margin:14px 0 0;padding:0}
     .tt-list li{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-top:1px solid var(--tt-line);font-size:12px}
     .tt-list b{font-weight:500}
