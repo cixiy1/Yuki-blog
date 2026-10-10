@@ -10,11 +10,16 @@
     .tt-title{font-size:15px;font-weight:500}
     .tt-sub{font-size:12px;color:var(--tt-tx2)}
     .tt-bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:14px 0 10px}
-    .tt-bar button,.tt-bar select{font:inherit;font-size:12px;padding:4px 10px;border:1px solid var(--tt-line);background:var(--tt-panel2);color:var(--tt-tx);border-radius:8px;cursor:pointer}
+    .tt-bar button,.tt-bar select{flex:0 0 auto;font:inherit;font-size:12px;padding:4px 10px;border:1px solid var(--tt-line);background:var(--tt-panel2);color:var(--tt-tx);border-radius:8px;cursor:pointer}
     .tt-bar button:hover{border-color:var(--tt-on-bd)}
-    #tt-week{display:flex;align-items:center;gap:8px;font-size:14px}
-    .tt-wdate{font-size:12px;color:var(--tt-tx2)}
-    .tt-now{font-style:normal;font-size:11px;padding:1px 6px;border-radius:6px;background:var(--tt-on-bg);color:var(--tt-on-tx)}
+    /* 周次标签及其内部三段全部定宽（2026-10-10）：切换周次时按钮的横向位置与换行点保持不变。
+       否则周号进位（第 9→10 周）、日期跨月（9/28 → 10/26）、「本周」徽章的出现/消失
+       都会改变标签宽度 → 按钮被挤来挤去，连续点击时点不中。 */
+    #tt-week{display:flex;flex:0 0 auto;align-items:center;gap:8px;font-size:14px}
+    #tt-week b{flex:0 0 auto;min-width:58px;white-space:nowrap;font-variant-numeric:tabular-nums}
+    .tt-wdate{flex:0 0 auto;min-width:82px;font-size:12px;color:var(--tt-tx2);font-variant-numeric:tabular-nums;white-space:nowrap}
+    .tt-now{flex:0 0 auto;font-style:normal;font-size:11px;padding:1px 6px;border-radius:6px;background:var(--tt-on-bg);color:var(--tt-on-tx)}
+    .tt-now.is-hidden{visibility:hidden}
     .tt-changes{margin:14px 0 0;padding:10px 12px;border:1px dashed var(--tt-line);border-radius:10px;background:var(--tt-panel2)}
     .tt-changes.is-empty{display:none}
     .tt-h4{font-size:13px;font-weight:500;margin:0 0 6px}
@@ -436,7 +441,8 @@ function initClassSchedule() {
       head.innerHTML =
         '<b>第 ' + week + ' 周</b>' +
         '<span class="tt-wdate">' + fmt(mon) + " – " + fmt(sun) + "</span>" +
-        (isNow ? '<i class="tt-now">本周</i>' : "");
+        /* 「本周」徽章始终渲染，非本周用 .is-hidden 隐藏 —— 保留占位，避免标签宽度随周次变化 */
+        '<i class="tt-now' + (isNow ? "" : " is-hidden") + '">本周</i>';
     }
 
     var html = '<div class="tt-row tt-row-h"><i class="tt-sl"></i>';
