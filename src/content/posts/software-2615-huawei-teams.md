@@ -116,7 +116,7 @@ html.dark .teams-root{
 <div class="tm-member"><span class="tm-facewrap"><img class="tm-face" src="/assets/teams/nsdd/nsdd-06.jpg" alt="" loading="lazy"></span><span class="tm-info"><span class="tm-name">北极企鹅</span></span></div>
 <div class="tm-member"><span class="tm-facewrap"><img class="tm-face" src="/assets/teams/nsdd/nsdd-07.jpg" alt="" loading="lazy"></span><span class="tm-info"><span class="tm-name">邪恶脆脆鲨</span></span></div>
 <div class="tm-member"><span class="tm-facewrap"><img class="tm-face" src="/assets/teams/nsdd/nsdd-08.jpg" alt="" loading="lazy"></span><span class="tm-info"><span class="tm-name">Jax</span></span></div>
-<div class="tm-member"><span class="tm-facewrap"><img class="tm-face" src="/assets/teams/nsdd/nsdd-09.jpg" alt="" loading="lazy"></span><span class="tm-info"><span class="tm-name">Yukiho</span></span></div>
+<div class="tm-member"><span class="tm-facewrap"><img class="tm-face" src="/assets/teams/nsdd/nsdd-09.jpg" alt="" loading="lazy"></span><span class="tm-info"><span class="tm-name">Yukiho</span><span class="tm-sid">雪穗-26121537</span></span></div>
 <div class="tm-member"><span class="tm-facewrap"><img class="tm-face" src="/assets/teams/nsdd/nsdd-10.jpg" alt="" loading="lazy"></span><span class="tm-info"><span class="tm-name">music</span></span></div>
 </div>
 </div>
