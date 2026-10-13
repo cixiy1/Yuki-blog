@@ -66,6 +66,9 @@ html.dark .teams-root{
 .teams-root .tm-cap{flex:none;margin-left:.3rem;padding:.05rem .32rem;border-radius:.3rem;font-size:.62rem;font-weight:700;font-style:normal;letter-spacing:.04em;background:var(--tm-gold);color:var(--tm-card);vertical-align:.06rem}
 .teams-root .tm-member.is-cap{background:var(--tm-gold-soft);border-color:var(--tm-gold-line)}
 .teams-root .tm-member.is-cap .tm-avatar{background:var(--tm-gold-soft);color:var(--tm-gold);border-color:var(--tm-gold-line)}
+.teams-root .tm-member.ph{background:transparent;border-style:dashed;border-color:var(--tm-line2)}
+.teams-root .tm-member.ph .tm-avatar{background:transparent;border-style:dashed;border-color:var(--tm-line2);color:var(--tm-text3)}
+.teams-root .tm-member.ph .tm-name{color:var(--tm-text2);font-weight:500}
 /* ---- 散员 / 未报名 chip ---- */
 .teams-root .tm-chips{display:flex;flex-wrap:wrap;gap:.42rem}
 .teams-root .tm-chip{display:inline-flex;align-items:baseline;gap:.35rem;padding:.34rem .62rem;border-radius:.5rem;background:var(--tm-panel);border:1px solid var(--tm-line);font-size:.82rem;font-weight:600;color:var(--tm-text)}
@@ -102,7 +105,27 @@ html.dark .teams-root{
 <div class="tm-teams">
 <div class="tm-team hascap">
 <div class="tm-team-head">
+<span class="tm-team-name">你说的都队</span>
+<span class="tm-nocap">跨年级联队</span>
+<span class="tm-team-count">10 人</span>
+</div>
+<div class="tm-members">
+<div class="tm-member is-cap"><span class="tm-avatar">唐</span><span class="tm-info"><span class="tm-name">唐之帆<i class="tm-cap">队长</i></span><span class="tm-sid">26121537</span></span></div>
+<div class="tm-member ph"><span class="tm-avatar">?</span><span class="tm-info"><span class="tm-name">其他年级队员①</span><span class="tm-sid">其他年级</span></span></div>
+<div class="tm-member ph"><span class="tm-avatar">?</span><span class="tm-info"><span class="tm-name">其他年级队员②</span><span class="tm-sid">其他年级</span></span></div>
+<div class="tm-member ph"><span class="tm-avatar">?</span><span class="tm-info"><span class="tm-name">其他年级队员③</span><span class="tm-sid">其他年级</span></span></div>
+<div class="tm-member ph"><span class="tm-avatar">?</span><span class="tm-info"><span class="tm-name">其他年级队员④</span><span class="tm-sid">其他年级</span></span></div>
+<div class="tm-member ph"><span class="tm-avatar">?</span><span class="tm-info"><span class="tm-name">其他年级队员⑤</span><span class="tm-sid">其他年级</span></span></div>
+<div class="tm-member ph"><span class="tm-avatar">?</span><span class="tm-info"><span class="tm-name">其他年级队员⑥</span><span class="tm-sid">其他年级</span></span></div>
+<div class="tm-member ph"><span class="tm-avatar">?</span><span class="tm-info"><span class="tm-name">其他年级队员⑦</span><span class="tm-sid">其他年级</span></span></div>
+<div class="tm-member ph"><span class="tm-avatar">?</span><span class="tm-info"><span class="tm-name">其他年级队员⑧</span><span class="tm-sid">其他年级</span></span></div>
+<div class="tm-member ph"><span class="tm-avatar">?</span><span class="tm-info"><span class="tm-name">其他年级队员⑨</span><span class="tm-sid">其他年级</span></span></div>
+</div>
+</div>
+<div class="tm-team hascap">
+<div class="tm-team-head">
 <span class="tm-team-name">对不队</span>
+<span class="tm-nocap">代理 · 唐之帆</span>
 <span class="tm-team-count">9 人</span>
 </div>
 <div class="tm-members">
@@ -167,16 +190,6 @@ html.dark .teams-root{
 </div>
 <div class="tm-team">
 <div class="tm-team-head">
-<span class="tm-team-name">你说的都队</span>
-<span class="tm-nocap">队长未登记</span>
-<span class="tm-team-count">1 人</span>
-</div>
-<div class="tm-members">
-<div class="tm-member"><span class="tm-avatar">唐</span><span class="tm-info"><span class="tm-name">唐之帆</span><span class="tm-sid">26121537</span></span></div>
-</div>
-</div>
-<div class="tm-team">
-<div class="tm-team-head">
 <span class="tm-team-name">宇智波</span>
 <span class="tm-nocap">队长未登记</span>
 <span class="tm-team-count">1 人</span>
@@ -232,6 +245,8 @@ html.dark .teams-root{
 全班 <b>51</b> 人，已填问卷 <b>45</b> 人；其中 <b>26</b> 人已加入队伍（7 支）、<b>1</b> 人已报名待组队、<b>18</b> 人暂未报名，另有 <b>6</b> 人尚未填写问卷（名单见上方区块）。
 「535」队中有成员将队名填作「535团队」，已按同一支队伍归并展示。
 标注「队长未登记」的队伍，表示暂无人以队长身份提交——多因队长本人尚未填写问卷，收到反馈后会及时更新。
+「你说的都队」为跨年级联队：本班 1 人之外另有 9 名其他年级队员，页面以占位卡片表示，实际名单待补充。
+「对不队」日常由 唐之帆 同学代理，队长仍为 周尚彬。
 数据更新于 <b>2026-10-13</b>，个别学号填写有误已按正确学号归位；如队伍或身份有变动，请联系班级临时负责人更正。
 </div>
 </div>
