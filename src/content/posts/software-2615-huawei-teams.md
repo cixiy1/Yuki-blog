@@ -1,7 +1,7 @@
 ---
 title: 软件2615 华为开发者大赛组队一览
 published: 2026-10-08
-description: 软件2615（人工智能学院 2026 级）华为开发者大赛报名与组队情况一览：5 支参赛队伍及队员名单，队长单独标识。
+description: 软件2615（人工智能学院 2026 级）华为开发者大赛报名与组队情况一览：7 支参赛队伍及队员名单，队长单独标识。
 tags:
   - 校园
   - 软件2615
@@ -90,15 +90,15 @@ html.dark .teams-root{
 <div class="tm-sub">数据取自本班《华为开发者大赛调查问卷》2026-10-13 导出（全班 51 人，已填 45 人），按队伍分组，队长单独标识。</div>
 <div class="tm-stats">
 <span class="tm-stat">全班 <b>51</b> 人</span>
-<span class="tm-stat hl"><b>5</b>支队伍</span>
-<span class="tm-stat"><b>17</b>人已组队</span>
-<span class="tm-stat"><b>7</b>人待组队</span>
-<span class="tm-stat"><b>21</b>人未报名</span>
+<span class="tm-stat hl"><b>7</b>支队伍</span>
+<span class="tm-stat"><b>23</b>人已组队</span>
+<span class="tm-stat"><b>4</b>人待组队</span>
+<span class="tm-stat"><b>18</b>人未报名</span>
 <span class="tm-stat">未填 <b>6</b> 人</span>
 </div>
 </div>
 <div class="tm-sec">
-<div class="tm-sec-title"><span class="tm-dot"></span>参赛队伍<span class="tm-n">5 支 · 17 人</span></div>
+<div class="tm-sec-title"><span class="tm-dot"></span>参赛队伍<span class="tm-n">7 支 · 23 人</span></div>
 <div class="tm-teams">
 <div class="tm-team hascap">
 <div class="tm-team-head">
@@ -117,25 +117,38 @@ html.dark .teams-root{
 <div class="tm-team hascap">
 <div class="tm-team-head">
 <span class="tm-team-name">对不队</span>
-<span class="tm-team-count">5 人</span>
+<span class="tm-team-count">6 人</span>
 </div>
 <div class="tm-members">
 <div class="tm-member is-cap"><span class="tm-avatar">周</span><span class="tm-info"><span class="tm-name">周尚彬<i class="tm-cap">队长</i></span><span class="tm-sid">26121553</span></span></div>
 <div class="tm-member"><span class="tm-avatar">赖</span><span class="tm-info"><span class="tm-name">赖镇嘉</span><span class="tm-sid">26121515</span></span></div>
 <div class="tm-member"><span class="tm-avatar">李</span><span class="tm-info"><span class="tm-name">李儒东</span><span class="tm-sid">26121520</span></span></div>
 <div class="tm-member"><span class="tm-avatar">李</span><span class="tm-info"><span class="tm-name">李轩</span><span class="tm-sid">26121522</span></span></div>
+<div class="tm-member"><span class="tm-avatar">魏</span><span class="tm-info"><span class="tm-name">魏浩彬</span><span class="tm-sid">26121538</span></span></div>
 <div class="tm-member"><span class="tm-avatar">郑</span><span class="tm-info"><span class="tm-name">郑景辉</span><span class="tm-sid">26121551</span></span></div>
 </div>
 </div>
 <div class="tm-team hascap">
 <div class="tm-team-head">
 <span class="tm-team-name">535</span>
-<span class="tm-team-count">3 人</span>
+<span class="tm-team-count">4 人</span>
 </div>
 <div class="tm-members">
 <div class="tm-member is-cap"><span class="tm-avatar">叶</span><span class="tm-info"><span class="tm-name">叶德靖<i class="tm-cap">队长</i></span><span class="tm-sid">26121544</span></span></div>
 <div class="tm-member"><span class="tm-avatar">邱</span><span class="tm-info"><span class="tm-name">邱金盛</span><span class="tm-sid">26121536</span></span></div>
+<div class="tm-member"><span class="tm-avatar">许</span><span class="tm-info"><span class="tm-name">许银华</span><span class="tm-sid">26121541</span></span></div>
 <div class="tm-member"><span class="tm-avatar">赵</span><span class="tm-info"><span class="tm-name">赵东升</span><span class="tm-sid">26121550</span></span></div>
+</div>
+</div>
+<div class="tm-team hascap">
+<div class="tm-team-head">
+<span class="tm-team-name">hly</span>
+<span class="tm-team-count">3 人</span>
+</div>
+<div class="tm-members">
+<div class="tm-member is-cap"><span class="tm-avatar">林</span><span class="tm-info"><span class="tm-name">林子钰<i class="tm-cap">队长</i></span><span class="tm-sid">26121527</span></span></div>
+<div class="tm-member"><span class="tm-avatar">黄</span><span class="tm-info"><span class="tm-name">黄芷莹</span><span class="tm-sid">26121512</span></span></div>
+<div class="tm-member"><span class="tm-avatar">叶</span><span class="tm-info"><span class="tm-name">叶晓彤</span><span class="tm-sid">26121547</span></span></div>
 </div>
 </div>
 <div class="tm-team">
@@ -159,22 +172,29 @@ html.dark .teams-root{
 <div class="tm-member"><span class="tm-avatar">唐</span><span class="tm-info"><span class="tm-name">唐之帆</span><span class="tm-sid">26121537</span></span></div>
 </div>
 </div>
+<div class="tm-team">
+<div class="tm-team-head">
+<span class="tm-team-name">宇智波</span>
+<span class="tm-nocap">队长未登记</span>
+<span class="tm-team-count">1 人</span>
+</div>
+<div class="tm-members">
+<div class="tm-member"><span class="tm-avatar">李</span><span class="tm-info"><span class="tm-name">李茜霖</span><span class="tm-sid">26121519</span></span></div>
+</div>
+</div>
 </div>
 </div>
 <div class="tm-sec">
-<div class="tm-sec-title"><span class="tm-dot"></span>已报名 · 待组队<span class="tm-n">7 人</span></div>
+<div class="tm-sec-title"><span class="tm-dot"></span>已报名 · 待组队<span class="tm-n">4 人</span></div>
 <div class="tm-chips">
 <span class="tm-chip">蔡圳妍<s>26121501</s></span>
-<span class="tm-chip">黄芷莹<s>26121512</s></span>
 <span class="tm-chip">林琪琪<s>26121525</s></span>
-<span class="tm-chip">林子钰<s>26121527</s></span>
 <span class="tm-chip">刘峰源<s>26121528</s></span>
-<span class="tm-chip">魏浩彬<s>26121538</s></span>
-<span class="tm-chip">许银华<s>26121541</s></span>
+<span class="tm-chip">张泽琳<s>26121549</s></span>
 </div>
 </div>
 <div class="tm-sec tm-dim">
-<div class="tm-sec-title"><span class="tm-dot"></span>未报名<span class="tm-n">21 人</span></div>
+<div class="tm-sec-title"><span class="tm-dot"></span>未报名<span class="tm-n">18 人</span></div>
 <div class="tm-chips">
 <span class="tm-chip">陈宝宁<s>26121502</s></span>
 <span class="tm-chip">陈海桐<s>26121503</s></span>
@@ -184,7 +204,6 @@ html.dark .teams-root{
 <span class="tm-chip">黄武彬<s>26121511</s></span>
 <span class="tm-chip">孔垂杰<s>26121513</s></span>
 <span class="tm-chip">孔令敏<s>26121514</s></span>
-<span class="tm-chip">李茜霖<s>26121519</s></span>
 <span class="tm-chip">利智敏<s>26121523</s></span>
 <span class="tm-chip">罗佳莉<s>26121531</s></span>
 <span class="tm-chip">罗震堃<s>26121534</s></span>
@@ -193,9 +212,7 @@ html.dark .teams-root{
 <span class="tm-chip">杨坤璟<s>26121542</s></span>
 <span class="tm-chip">叶丞亨<s>26121543</s></span>
 <span class="tm-chip">叶慧愉<s>26121545</s></span>
-<span class="tm-chip">叶晓彤<s>26121547</s></span>
 <span class="tm-chip">湛伶钰<s>26121548</s></span>
-<span class="tm-chip">张泽琳<s>26121549</s></span>
 <span class="tm-chip">周嘉欣<s>26121552</s></span>
 </div>
 </div>
@@ -212,7 +229,7 @@ html.dark .teams-root{
 </div>
 <div class="tm-foot">
 <b>说明</b>：队伍名称与身份均来自同学在问卷中的自行填写，按学号升序排列，队长排在各队首位。
-全班 <b>51</b> 人，已填问卷 <b>45</b> 人；其中 <b>17</b> 人已加入队伍（5 支）、<b>7</b> 人已报名待组队、<b>21</b> 人暂未报名，另有 <b>6</b> 人尚未填写问卷（名单见上方区块）。
+全班 <b>51</b> 人，已填问卷 <b>45</b> 人；其中 <b>23</b> 人已加入队伍（7 支）、<b>4</b> 人已报名待组队、<b>18</b> 人暂未报名，另有 <b>6</b> 人尚未填写问卷（名单见上方区块）。
 「535」队中有成员将队名填作「535团队」，已按同一支队伍归并展示。
 标注「队长未登记」的队伍，表示暂无人以队长身份提交——多因队长本人尚未填写问卷，收到反馈后会及时更新。
 数据更新于 <b>2026-10-13</b>，个别学号填写有误已按正确学号归位；如队伍或身份有变动，请联系班级临时负责人更正。
