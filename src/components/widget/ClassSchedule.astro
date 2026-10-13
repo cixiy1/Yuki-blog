@@ -297,7 +297,7 @@ function initClassSchedule() {
           name: ov.name || "", short: ov.short || ov.name || "", room: ov.room || "",
           teacher: ov.teacher || "", time: ov.time || "",
           weeks: Array.isArray(ov.weeks) ? ov.weeks.join(",") : String(ov.weeks || ""),
-          active: true, cancelled: false, temp: true,
+          active: true, cancelled: false, temp: true, flag: ov.flag || "",
           changes: [{ t: "add", note: ov.note || "" }]
         });
         return;
@@ -484,8 +484,8 @@ function initClassSchedule() {
         var flag = "";
         if (cell.changes.length) {
           var t = cell.cancelled ? "cancel" : cell.changes[0].t;
-          var lb = t === "room" ? "改地点" : t === "move" ? "调课" : t === "cancel" ? "停课" : t === "add" ? "新增" : "对调";
-          flag = '<u class="tt-flag f-' + t + '">' + lb + "</u>";
+          var lb = cell.flag || (t === "room" ? "改地点" : t === "move" ? "调课" : t === "cancel" ? "停课" : t === "add" ? "新增" : "对调");
+          flag = '<u class="tt-flag f-' + t + '">' + esc(lb) + "</u>";
         } else if (!cell.active && !cell.cancelled) {
           flag = '<u class="tt-flag f-off">非本周</u>';
         }
