@@ -125,7 +125,7 @@ html.dark .teams-root{
 <div class="tm-team hascap">
 <div class="tm-team-head">
 <span class="tm-team-name">对不队</span>
-<span class="tm-nocap">代理 · 唐之帆</span>
+<span class="tm-nocap">代理 · 雪穗</span>
 <span class="tm-team-count">9 人</span>
 </div>
 <div class="tm-members">
@@ -143,6 +143,7 @@ html.dark .teams-root{
 <div class="tm-team hascap">
 <div class="tm-team-head">
 <span class="tm-team-name">格历空调供应商</span>
+<span class="tm-nocap">代理 · 雪穗</span>
 <span class="tm-team-count">6 人</span>
 </div>
 <div class="tm-members">
@@ -246,7 +247,8 @@ html.dark .teams-root{
 「535」队中有成员将队名填作「535团队」，已按同一支队伍归并展示。
 标注「队长未登记」的队伍，表示暂无人以队长身份提交——多因队长本人尚未填写问卷，收到反馈后会及时更新。
 「你说的都队」为跨年级组队，完整名单由队内提供，队内其他年级成员以外号（网名）展示，队长以群名片标注。
-「对不队」日常由 唐之帆 同学代理，队长仍为 周尚彬。
+「对不队」日常由 雪穗 同学代理，队长仍为 周尚彬。
+「格历空调供应商」日常由 雪穗 同学代理，队长仍为 陈业成。
 数据更新于 <b>2026-10-13</b>，个别学号填写有误已按正确学号归位；如队伍或身份有变动，请联系班级临时负责人更正。
 </div>
 </div>
