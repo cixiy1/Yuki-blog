@@ -14,7 +14,7 @@ seriesOrder: 6
 comment: false
 ---
 
-2026 年华为开发者大赛，软件2615 班报名与组队情况一览。数据取自本班《华为开发者大赛调查问卷》2026-10-08 导出，按队伍分组展示，队长单独标识。
+2026 年华为开发者大赛，软件2615 班报名与组队情况一览。数据取自本班《华为开发者大赛调查问卷》2026-10-13 导出，按队伍分组展示，队长单独标识。
 
 <div class="teams-root">
 <style>
@@ -85,7 +85,7 @@ html.dark .teams-root{
 <div class="tm-wrap">
 <div class="tm-head">
 <div class="tm-title">软件2615 华为开发者大赛 · 组队一览<span class="tm-tag">2026</span></div>
-<div class="tm-sub">数据取自本班《华为开发者大赛调查问卷》2026-10-08 导出（全班 51 人，已填 45 人），按队伍分组，队长单独标识。</div>
+<div class="tm-sub">数据取自本班《华为开发者大赛调查问卷》2026-10-13 导出（全班 51 人，已填 45 人），按队伍分组，队长单独标识。</div>
 <div class="tm-stats">
 <span class="tm-stat hl"><b>5</b>支队伍</span>
 <span class="tm-stat"><b>17</b>人已组队</span>
@@ -123,6 +123,17 @@ html.dark .teams-root{
 <div class="tm-member"><span class="tm-avatar">郑</span><span class="tm-info"><span class="tm-name">郑景辉</span><span class="tm-sid">26121551</span></span></div>
 </div>
 </div>
+<div class="tm-team hascap">
+<div class="tm-team-head">
+<span class="tm-team-name">535</span>
+<span class="tm-team-count">3 人</span>
+</div>
+<div class="tm-members">
+<div class="tm-member is-cap"><span class="tm-avatar">叶</span><span class="tm-info"><span class="tm-name">叶德靖<i class="tm-cap">队长</i></span><span class="tm-sid">26121544</span></span></div>
+<div class="tm-member"><span class="tm-avatar">邱</span><span class="tm-info"><span class="tm-name">邱金盛</span><span class="tm-sid">26121536</span></span></div>
+<div class="tm-member"><span class="tm-avatar">赵</span><span class="tm-info"><span class="tm-name">赵东升</span><span class="tm-sid">26121550</span></span></div>
+</div>
+</div>
 <div class="tm-team">
 <div class="tm-team-head">
 <span class="tm-team-name">天乐</span>
@@ -142,17 +153,6 @@ html.dark .teams-root{
 </div>
 <div class="tm-members">
 <div class="tm-member"><span class="tm-avatar">唐</span><span class="tm-info"><span class="tm-name">唐之帆</span><span class="tm-sid">26121537</span></span></div>
-</div>
-</div>
-<div class="tm-team hascap">
-<div class="tm-team-head">
-<span class="tm-team-name">535</span>
-<span class="tm-team-count">3 人</span>
-</div>
-<div class="tm-members">
-<div class="tm-member is-cap"><span class="tm-avatar">叶</span><span class="tm-info"><span class="tm-name">叶德靖<i class="tm-cap">队长</i></span><span class="tm-sid">26121544</span></span></div>
-<div class="tm-member"><span class="tm-avatar">邱</span><span class="tm-info"><span class="tm-name">邱金盛</span><span class="tm-sid">26121536</span></span></div>
-<div class="tm-member"><span class="tm-avatar">赵</span><span class="tm-info"><span class="tm-name">赵东升</span><span class="tm-sid">26121550</span></span></div>
 </div>
 </div>
 </div>
@@ -200,7 +200,7 @@ html.dark .teams-root{
 全班 <b>51</b> 人，已填问卷 <b>45</b> 人；其中 <b>17</b> 人已加入队伍（5 支）、<b>7</b> 人已报名待组队、<b>21</b> 人暂未报名，另有 <b>6</b> 人尚未填写问卷。
 「535」队中有成员将队名填作「535团队」，已按同一支队伍归并展示。
 标注「队长未登记」的队伍，表示暂无人以队长身份提交——多因队长本人尚未填写问卷，收到反馈后会及时更新。
-数据更新于 <b>2026-10-08 23:27</b>，个别学号填写有误已按正确学号归位；如队伍或身份有变动，请联系班级临时负责人更正。
+数据更新于 <b>2026-10-13</b>，个别学号填写有误已按正确学号归位；如队伍或身份有变动，请联系班级临时负责人更正。
 </div>
 </div>
 </div>
