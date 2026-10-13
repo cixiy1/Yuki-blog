@@ -95,14 +95,14 @@ html.dark .teams-root{
 <div class="tm-stats">
 <span class="tm-stat">全班 <b>51</b> 人</span>
 <span class="tm-stat hl"><b>7</b>支队伍</span>
-<span class="tm-stat"><b>26</b>人已组队</span>
-<span class="tm-stat"><b>1</b>人待组队</span>
+<span class="tm-stat"><b>27</b>人已组队</span>
+<span class="tm-stat hl">已全部组队</span>
 <span class="tm-stat"><b>18</b>人未报名</span>
 <span class="tm-stat">未填 <b>6</b> 人</span>
 </div>
 </div>
 <div class="tm-sec">
-<div class="tm-sec-title"><span class="tm-dot"></span>参赛队伍<span class="tm-n">7 支 · 26 人</span></div>
+<div class="tm-sec-title"><span class="tm-dot"></span>参赛队伍<span class="tm-n">7 支 · 27 人</span></div>
 <div class="tm-teams">
 <div class="tm-team hascap">
 <div class="tm-team-head">
@@ -158,10 +158,11 @@ html.dark .teams-root{
 <div class="tm-team hascap">
 <div class="tm-team-head">
 <span class="tm-team-name">535</span>
-<span class="tm-team-count">4 人</span>
+<span class="tm-team-count">5 人</span>
 </div>
 <div class="tm-members">
 <div class="tm-member is-cap"><span class="tm-avatar">叶</span><span class="tm-info"><span class="tm-name">叶德靖<i class="tm-cap">队长</i></span><span class="tm-sid">26121544</span></span></div>
+<div class="tm-member"><span class="tm-avatar">刘</span><span class="tm-info"><span class="tm-name">刘峰源</span><span class="tm-sid">26121528</span></span></div>
 <div class="tm-member"><span class="tm-avatar">邱</span><span class="tm-info"><span class="tm-name">邱金盛</span><span class="tm-sid">26121536</span></span></div>
 <div class="tm-member"><span class="tm-avatar">许</span><span class="tm-info"><span class="tm-name">许银华</span><span class="tm-sid">26121541</span></span></div>
 <div class="tm-member"><span class="tm-avatar">赵</span><span class="tm-info"><span class="tm-name">赵东升</span><span class="tm-sid">26121550</span></span></div>
@@ -201,12 +202,6 @@ html.dark .teams-root{
 </div>
 </div>
 </div>
-<div class="tm-sec">
-<div class="tm-sec-title"><span class="tm-dot"></span>已报名 · 待组队<span class="tm-n">1 人</span></div>
-<div class="tm-chips">
-<span class="tm-chip">刘峰源<s>26121528</s></span>
-</div>
-</div>
 <div class="tm-sec tm-dim">
 <div class="tm-sec-title"><span class="tm-dot"></span>未报名<span class="tm-n">18 人</span></div>
 <div class="tm-chips">
@@ -243,7 +238,7 @@ html.dark .teams-root{
 </div>
 <div class="tm-foot">
 <b>说明</b>：队伍名称与身份均来自同学在问卷中的自行填写，按学号升序排列，队长排在各队首位。
-全班 <b>51</b> 人，已填问卷 <b>45</b> 人；其中 <b>26</b> 人已加入队伍（7 支）、<b>1</b> 人已报名待组队、<b>18</b> 人暂未报名，另有 <b>6</b> 人尚未填写问卷（名单见上方区块）。
+全班 <b>51</b> 人，已填问卷 <b>45</b> 人；其中 <b>27</b> 人已加入队伍（7 支，已报名的同学均已组队）、<b>18</b> 人暂未报名，另有 <b>6</b> 人尚未填写问卷（名单见上方区块）。
 「535」队中有成员将队名填作「535团队」，已按同一支队伍归并展示。
 标注「队长未登记」的队伍，表示暂无人以队长身份提交——多因队长本人尚未填写问卷，收到反馈后会及时更新。
 「你说的都队」为跨年级组队，完整名单由队内提供，队内其他年级成员以外号（网名）展示，队长以群名片标注。
