@@ -16,7 +16,7 @@ comment: false
 
 2026 年华为开发者大赛，软件2615 班报名与组队情况一览。数据取自本班《华为开发者大赛调查问卷》2026-10-13 导出，按队伍分组展示，队长单独标识。
 
-<div class="teams-root">
+<div class="teams-root not-prose">
 <style>
 .teams-root{
 --tm-card:#ffffff;--tm-panel:#f6faf9;--tm-text:#16211f;--tm-text2:#5a6b68;--tm-text3:#8b9a97;
@@ -68,6 +68,8 @@ html.dark .teams-root{
 .teams-root .tm-member.is-cap .tm-avatar{background:var(--tm-gold-soft);color:var(--tm-gold);border-color:var(--tm-gold-line)}
 .teams-root .tm-facewrap{flex:none;width:1.9rem;height:1.9rem;display:block}
 .teams-root .tm-face{width:1.9rem;height:1.9rem;border-radius:50%;object-fit:cover;display:block;border:1px solid var(--tm-line2);background:var(--tm-panel)}
+/* 主题 prose 排版会给文章内 img 加 2em 上下边距（曾把头像顶出卡片）——not-prose 豁免 + 显式重置双保险 */
+.teams-root img{margin:0;max-width:none;height:auto}
 /* ---- 散员 / 未报名 chip ---- */
 .teams-root .tm-chips{display:flex;flex-wrap:wrap;gap:.42rem}
 .teams-root .tm-chip{display:inline-flex;align-items:baseline;gap:.35rem;padding:.34rem .62rem;border-radius:.5rem;background:var(--tm-panel);border:1px solid var(--tm-line);font-size:.82rem;font-weight:600;color:var(--tm-text)}
