@@ -71,6 +71,8 @@ html.dark .teams-root{
 .teams-root .tm-chip{display:inline-flex;align-items:baseline;gap:.35rem;padding:.34rem .62rem;border-radius:.5rem;background:var(--tm-panel);border:1px solid var(--tm-line);font-size:.82rem;font-weight:600;color:var(--tm-text)}
 .teams-root .tm-chip s{text-decoration:none;font-size:.7rem;font-weight:400;color:var(--tm-text3);font-variant-numeric:tabular-nums}
 .teams-root .tm-dim .tm-chip{background:transparent;border-style:dashed;color:var(--tm-text2);font-weight:400}
+.teams-root .tm-pending .tm-chip{border-color:var(--tm-gold-line);color:var(--tm-text3)}
+.teams-root .tm-pending .tm-dot{background:var(--tm-gold)}
 .teams-root .tm-empty{font-size:.8rem;color:var(--tm-text3)}
 /* ---- 页脚 ---- */
 .teams-root .tm-foot{margin-top:1.4rem;padding-top:.75rem;border-top:1px dashed var(--tm-line2);font-size:.73rem;line-height:1.75;color:var(--tm-text3)}
@@ -197,9 +199,20 @@ html.dark .teams-root{
 <span class="tm-chip">周嘉欣<s>26121552</s></span>
 </div>
 </div>
+<div class="tm-sec tm-dim tm-pending">
+<div class="tm-sec-title"><span class="tm-dot"></span>尚未填写问卷<span class="tm-n">6 人</span></div>
+<div class="tm-chips">
+<span class="tm-chip">陈泽锐<s>26121506</s></span>
+<span class="tm-chip">何曼妮<s>26121509</s></span>
+<span class="tm-chip">蓝源赐<s>26121516</s></span>
+<span class="tm-chip">李伟韬<s>26121521</s></span>
+<span class="tm-chip">刘烨锵<s>26121529</s></span>
+<span class="tm-chip">卢雨婷<s>26121530</s></span>
+</div>
+</div>
 <div class="tm-foot">
 <b>说明</b>：队伍名称与身份均来自同学在问卷中的自行填写，按学号升序排列，队长排在各队首位。
-全班 <b>51</b> 人，已填问卷 <b>45</b> 人；其中 <b>17</b> 人已加入队伍（5 支）、<b>7</b> 人已报名待组队、<b>21</b> 人暂未报名，另有 <b>6</b> 人尚未填写问卷。
+全班 <b>51</b> 人，已填问卷 <b>45</b> 人；其中 <b>17</b> 人已加入队伍（5 支）、<b>7</b> 人已报名待组队、<b>21</b> 人暂未报名，另有 <b>6</b> 人尚未填写问卷（名单见上方区块）。
 「535」队中有成员将队名填作「535团队」，已按同一支队伍归并展示。
 标注「队长未登记」的队伍，表示暂无人以队长身份提交——多因队长本人尚未填写问卷，收到反馈后会及时更新。
 数据更新于 <b>2026-10-13</b>，个别学号填写有误已按正确学号归位；如队伍或身份有变动，请联系班级临时负责人更正。
