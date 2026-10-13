@@ -87,10 +87,12 @@ html.dark .teams-root{
 <div class="tm-title">软件2615 华为开发者大赛 · 组队一览<span class="tm-tag">2026</span></div>
 <div class="tm-sub">数据取自本班《华为开发者大赛调查问卷》2026-10-13 导出（全班 51 人，已填 45 人），按队伍分组，队长单独标识。</div>
 <div class="tm-stats">
+<span class="tm-stat">全班 <b>51</b> 人</span>
 <span class="tm-stat hl"><b>5</b>支队伍</span>
 <span class="tm-stat"><b>17</b>人已组队</span>
 <span class="tm-stat"><b>7</b>人待组队</span>
 <span class="tm-stat"><b>21</b>人未报名</span>
+<span class="tm-stat">未填 <b>6</b> 人</span>
 </div>
 </div>
 <div class="tm-sec">
