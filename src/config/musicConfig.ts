@@ -50,6 +50,13 @@ export const musicPlayerConfig: MusicPlayerConfig = {
 	local: {
 		playlist: [
 			{
+				name: "这里是神奇的赛尔号",
+				artist: "张杰",
+				url: "/assets/music/saierhao-zhangjie.m4a",
+				cover: "/assets/music/cover/saierhao-zhangjie.jpg",
+				lrc: "",
+			},
+			{
 				name: "勋章",
 				artist: "鹿晗",
 				url: "/assets/music/xunzhang-luhan.m4a",
