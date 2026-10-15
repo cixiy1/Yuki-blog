@@ -121,9 +121,28 @@
     .tt-log li::before{content:"";position:absolute;left:0;top:10px;bottom:10px;width:4px;border-radius:3px;background:var(--lc)}
     .tt-log-date{flex:0 0 auto;min-width:86px;color:var(--lc);background:color-mix(in srgb,var(--lc) 16%,var(--tt-panel));border-radius:6px;padding:1px 6px;font-variant-numeric:tabular-nums;white-space:nowrap;text-align:center;align-self:center}
     .tt-log-text{flex:1;color:var(--tt-tx);line-height:1.6}
-    /* 更新历正文重点词高亮：单一强调色（蓝），不凑彩虹，保持克制；
-       仅加重可读的关键词（角色/楼宇/事项/动作），不做整段花哨装饰。 */
-    .tt-root .tt-kw{font-weight:600;color:var(--tt-log-c5);background:color-mix(in srgb,var(--tt-log-c5) 16%,var(--tt-panel));border-radius:4px;padding:0 3px;box-decoration-break:clone;-webkit-box-decoration-break:clone}
+    /* 更新历正文重点词高亮：6 类，颜色×形式组合，信息有区分。
+       颜色用 currentColor 派生底色/描边，亮暗主题自动适配。 */
+    .tt-root .tt-kw{font-weight:600;border-radius:4px;padding:0 3px;box-decoration-break:clone;-webkit-box-decoration-break:clone}
+    /* role 角色——紫·实底 */
+    .tt-root .tt-kw-role{color:#6741d9;background:color-mix(in srgb,currentColor 14%,transparent)}
+    /* bld 楼宇——绿·实底 */
+    .tt-root .tt-kw-bld{color:#2b8a3e;background:color-mix(in srgb,currentColor 14%,transparent)}
+    /* subj 科目——橙·描边（无底色） */
+    .tt-root .tt-kw-subj{color:#d9480f;border:1.5px solid color-mix(in srgb,currentColor 55%,transparent);background:transparent}
+    /* evt 事项——蓝·实底 */
+    .tt-root .tt-kw-evt{color:#1971c2;background:color-mix(in srgb,currentColor 14%,transparent)}
+    /* act 中性动作——粉·下划线（无底色） */
+    .tt-root .tt-kw-act{color:#a61e4d;border-bottom:2px solid currentColor;border-radius:0;padding:0 1px;background:transparent}
+    /* neg 负面动作——红·虚线下划线 */
+    .tt-root .tt-kw-neg{color:#c92a2a;border-bottom:2px dashed currentColor;border-radius:0;padding:0 1px;background:transparent}
+    /* 暗主题：仅换文字色，底色/描边由 currentColor 自动派生 */
+    html.dark .tt-root .tt-kw-role{color:#b197fc}
+    html.dark .tt-root .tt-kw-bld{color:#8ce99a}
+    html.dark .tt-root .tt-kw-subj{color:#ffa94d}
+    html.dark .tt-root .tt-kw-evt{color:#74c0fc}
+    html.dark .tt-root .tt-kw-act{color:#faa2c1}
+    html.dark .tt-root .tt-kw-neg{color:#ff8787}
     .tt-log li:first-child{background:linear-gradient(90deg,color-mix(in srgb,var(--tt-log-c5) 14%,transparent),transparent);border-radius:8px}
     .tt-log li:first-child::after{content:"最新";flex:0 0 auto;align-self:center;font-size:10px;color:#fff;background:var(--tt-log-c5);border-radius:5px;padding:0 5px;line-height:16px;margin-left:2px}
 
@@ -276,10 +295,19 @@ function initClassSchedule() {
     });
   }
   /* 更新历日期格式化：YYYY-MM-DD HH:MM → MM-DD HH:MM（紧凑；无时间则仅 MM-DD） */
-  /* 更新历正文重点词高亮：渲染时对关键词加 <b class="tt-kw"> 强调（单一蓝强调色，克制不华丽）。
+  /* 更新历正文重点词高亮：按类别用不同颜色+不同形式组合，信息有区分。
+     类别：role 角色(紫·实底) / bld 楼宇(绿·实底) / subj 科目(橙·描边) / evt 事项(蓝·实底) /
+           act 中性动作(粉·下划线) / neg 负面动作(红·虚线下划线)。
      关键词按长度降序匹配，避免「军事理论」被拆成「理论」之类。 */
-  var TT_KW = ["劳动实践","军事理论","入党谈话","团籍资料","班委竞选","修德楼","强能楼","团支书","晚自习","体测","习概","机房","反诈","军训","宿舍","班长","Java","Web","改为","换至","新增","取消","停课","落实","调整","归档"];
-  TT_KW.sort(function (a, b) { return b.length - a.length; });
+  var TT_KW_MAP = {
+    "团支书": "role", "班长": "role",
+    "修德楼": "bld", "强能楼": "bld",
+    "习概": "subj", "Web": "subj", "Java": "subj", "军事理论": "subj",
+    "晚自习": "evt", "体测": "evt", "入党谈话": "evt", "团籍资料": "evt", "班委竞选": "evt", "反诈": "evt", "军训": "evt", "机房": "evt", "劳动实践": "evt", "宿舍": "evt",
+    "改为": "act", "换至": "act", "新增": "act", "落实": "act", "调整": "act", "归档": "act",
+    "取消": "neg", "停课": "neg"
+  };
+  var TT_KW = Object.keys(TT_KW_MAP).sort(function (a, b) { return b.length - a.length; });
   var TT_KW_RE = new RegExp("(" + TT_KW.map(function (s) {
     return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   }).join("|") + ")", "g");
@@ -288,7 +316,8 @@ function initClassSchedule() {
     re.lastIndex = 0;
     while ((m = re.exec(text))) {
       if (m[0].length === 0) { re.lastIndex++; continue; }
-      out += esc(text.slice(last, m.index)) + '<b class="tt-kw">' + esc(m[0]) + "</b>";
+      var cat = TT_KW_MAP[m[0]] || "evt";
+      out += esc(text.slice(last, m.index)) + '<b class="tt-kw tt-kw-' + cat + '">' + esc(m[0]) + "</b>";
       last = m.index + m[0].length;
     }
     out += esc(text.slice(last));
