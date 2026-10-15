@@ -503,21 +503,28 @@ function initClassSchedule() {
       };
     });
   }
-  function hlLog(raw) {
+  /* 渲染一段带重点的文本。
+     · 默认（tiered）：三层——定档（必看句黄底+句首竖条）、划词、划线；
+     · wordsOnly：关掉整层「定档」，只做词表着色（不上底色、不按档位加粗）。
+       用于「本周调整」这类运行时拼出来的文案（「课程名」+ 调整说明），
+       每一行本身已是「这周要处理的事」，再叠底纹会让整块列表变成一片花黄。 */
+  function hlLog(raw, wordsOnly) {
     var ann = ttParseMarks(raw);
     var text = ann.text;
     if (!text) return "";
     var marks = ann.marks, annotated = marks.length > 0;
     var ranges = ttKwRanges(text);
-    var sentences = ttSentences(text, ranges, marks, annotated);
+    var sentences = wordsOnly
+      ? ttSentenceRanges(text).map(function (s) { return { start: s[0], end: s[1], tier: "plain" }; })
+      : ttSentences(text, ranges, marks, annotated);
     var marked = 0;
-    for (var i = 0; i < sentences.length; i++) if (sentences[i].tier !== "plain") marked++;
+    if (!wordsOnly) for (var i = 0; i < sentences.length; i++) if (sentences[i].tier !== "plain") marked++;
     if (!ranges.length && !marked) return esc(text);
     var out = "";
     for (var i = 0; i < sentences.length; i++) {
       var ss = sentences[i].start, se = sentences[i].end, tier = sentences[i].tier;
       /* 算法定的必看句整句加粗；人工标注的只加粗标注的那几段。 */
-      var boldWhole = !annotated && tier === "core";
+      var boldWhole = !wordsOnly && !annotated && tier === "core";
       /* 只有「必看」句铺底色 + 句首竖条；「关注」句不铺底色 */
       if (tier === "core") out += '<i class="tt-mark"></i><span class="tt-sent-core">';
       /* 词区间与标注区间的边界一起切，使两层边界都落准 */
@@ -545,7 +552,7 @@ function initClassSchedule() {
           if (rr.start < b && rr.end > a) { hitKw = rr; break; }
         }
         var isMarked = false;
-        for (var q = 0; q < marks.length; q++) {
+        if (!wordsOnly) for (var q = 0; q < marks.length; q++) {
           /* 「一般」标注是显式压档，不加粗 */
           if (marks[q].start < b && marks[q].end > a && marks[q].tier !== "plain") { isMarked = true; break; }
         }
@@ -856,7 +863,7 @@ function initClassSchedule() {
       else {
         box.className = "tt-changes";
         box.innerHTML = '<h4>本周调整<span class="tt-chg-n">共 ' + chg.length + " 条</span></h4><ul>" + chg.map(function (c, ci) {
-          return '<li class="li-' + c.t + '" style="--tt-d:' + ci + '">' + hlLog(c.txt) + "</li>";
+          return '<li class="li-' + c.t + '" style="--tt-d:' + ci + '">' + hlLog(c.txt, true) + "</li>";
         }).join("") + "</ul>";
       }
     }
