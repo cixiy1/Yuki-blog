@@ -41,7 +41,7 @@ link:
 
 ## 应用内更新
 
-App 启动时会静默查询 GitHub Releases 的最新版本，与本地版本做语义化比较（兼容 `v` 前缀与 `+build` 后缀）；有新版本则弹窗展示变更说明，点「立即更新」直接用系统浏览器打开 APK 直链下载。设置页也提供手动检查入口，手动检查时无论有无更新都会给出结果反馈。
+App 启动时会静默查询 GitHub Releases 的最新版本，与本地版本做语义化比较（兼容 `v` 前缀与 `+build` 后缀）；有新版本则弹窗展示变更说明，并给出两条更新路径：**应用内下载**（带进度条，含百分比 / 已下载大小 / 实时速度 / 预计剩余时间，可随时取消）下载完成后**直接唤起系统安装器**；或**浏览器下载**跳转直链自行安装。设置页也提供手动检查入口，手动检查时无论有无更新都会给出结果反馈。
 
 最新安装包见 [Releases](https://github.com/cixiy1/Yuki-Blog-App/releases/latest)。
 
@@ -65,12 +65,13 @@ App 启动时会静默查询 GitHub Releases 的最新版本，与本地版本�
 | 路由 | go_router（`ShellRoute` 包一层抽屉导航壳） |
 | 网络 | http |
 | 更新检查 | package_info_plus（读本地版本）+ GitHub Releases API + url_launcher |
+| 更新下载 | http 流式下载（自研进度与取消）+ path_provider + open_filex（FileProvider 唤起系统安装器） |
 | 构建分发 | GitHub Actions（打 `v*` tag 自动跑测试、构建 release APK 并发 Release） |
 | 主题 | 亮/暗双主题跟随系统，课表状态色从 `ColorScheme` 派生 |
 
 ## 构建与分发
 
-Android 安装包不走手动打包：给仓库打一个 `v*` 形式的 tag，GitHub Actions（`.github/workflows/release.yml`）会自动执行 `flutter pub get` → `flutter test` → `flutter build apk --release`，把产物重命名为 `yuki-blog-<tag>.apk` 并发布到 Releases。App 内更新检查就是读这个 Release 的最新 tag 与本地版本比较，有新版弹窗并跳转直链下载。
+Android 安装包不走手动打包：给仓库打一个 `v*` 形式的 tag，GitHub Actions（`.github/workflows/release.yml`）会自动执行 `flutter pub get` → `flutter test` → `flutter build apk --release`，把产物重命名为 `yuki-blog-<tag>.apk` 并发布到 Releases。App 内更新检查就是读这个 Release 的最新 tag 与本地版本比较；有新版可**应用内下载**（下载到应用缓存后经 FileProvider 交给系统安装器，需系统首次授权「允许本应用安装应用」），也可选择跳转浏览器下载。
 
 ## 目录结构
 
@@ -82,7 +83,7 @@ lib/
 └── features/
     ├── home/                 HomeShell 导航壳（动态课程表 / 待办 / 设置）
     ├── schedule/             课表页 + 网格 / 周次条 / 详情 / 调整 / 通知 / 图例 / 更新历
-    ├── update/               发现新版本弹窗
+    ├── update/               发现新版本弹窗 + 应用内下载（进度 / 取消 / 唤起安装器）
     ├── todo/                 待办（占位）
     └── setting/              设置（检查更新）
 ```
@@ -99,6 +100,7 @@ lib/
 - [x] 本周调整面板关掉定档层，只保留词表着色
 - [x] 长内容全覆盖：课程详情的调整说明接入高亮，不留纯文本角落
 - [x] 应用内更新检查（GitHub Releases）
+- [x] 应用内下载更新包（进度条 / 取消 / 下载完唤起系统安装器）+ 浏览器下载双通道
 - [x] GitHub Actions 自动构建发布 APK
 - [x] 亮/暗主题与自适应图标
 - [ ] 待办页
