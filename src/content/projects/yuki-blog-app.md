@@ -19,7 +19,7 @@ link:
 
 ## 项目简介
 
-**Yuki-Blog App**（包名 `myclass`）是给软件2615 班写的班级应用，用 Flutter 开发，一套代码跑 Android / iOS / macOS / Windows / Web。当前已完成的核心模块是**动态课程表**——把博客上那套按周次自动推算、支持临时调课的课表搬到了 App 里。
+**Yuki-Blog App**（包名 `yuki_blog_app`）是给软件2615 班写的班级应用，用 Flutter 开发，一套代码跑 Android / iOS / macOS / Windows / Web。当前已完成的核心模块是**动态课程表**——把博客上那套按周次自动推算、支持临时调课的课表搬到了 App 里。
 
 ## 动态课程表
 
