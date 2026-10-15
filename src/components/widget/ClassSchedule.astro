@@ -123,18 +123,18 @@
     .tt-log-text{flex:1;color:var(--tt-tx);line-height:1.6}
     /* 更新历正文重点词高亮：6 类，颜色×形式组合，信息有区分；配色用浅色/柔和。 */
     .tt-root .tt-kw{font-weight:600;border-radius:4px;padding:0 3px;box-decoration-break:clone;-webkit-box-decoration-break:clone}
-    /* role 角色——紫·浅底 */
-    .tt-root .tt-kw-role{color:#5f3dc4;background:rgba(151,117,250,.18)}
-    /* bld 楼宇——绿·浅底 */
-    .tt-root .tt-kw-bld{color:#2b8a3e;background:rgba(105,219,124,.20)}
-    /* subj 科目——橙·描边（无底色） */
-    .tt-root .tt-kw-subj{color:#d9480f;border:1.5px solid #ffa94d;background:transparent}
-    /* evt 事项——蓝·浅底 */
-    .tt-root .tt-kw-evt{color:#1971c2;background:rgba(77,171,247,.18)}
-    /* act 中性动作——粉·下划线（无底色） */
-    .tt-root .tt-kw-act{color:#c2255c;border-bottom:2px solid #f783ac;border-radius:0;padding:0 1px;background:transparent}
-    /* neg 负面动作——红·虚线下划线 */
-    .tt-root .tt-kw-neg{color:#e03131;border-bottom:2px dashed #ff6b6b;border-radius:0;padding:0 1px;background:transparent}
+    /* role 角色——紫·浅底+浅字 */
+    .tt-root .tt-kw-role{color:#9775fa;background:rgba(151,117,250,.16)}
+    /* bld 楼宇——绿·浅底+浅字 */
+    .tt-root .tt-kw-bld{color:#51cf66;background:rgba(105,219,124,.16)}
+    /* subj 科目——橙·描边（无底色，浅字） */
+    .tt-root .tt-kw-subj{color:#ff922b;border:1.5px solid #ffa94d;background:transparent}
+    /* evt 事项——蓝·浅底+浅字 */
+    .tt-root .tt-kw-evt{color:#4dabf7;background:rgba(77,171,247,.16)}
+    /* act 中性动作——粉·下划线（无底色，浅字） */
+    .tt-root .tt-kw-act{color:#f06595;border-bottom:2px solid #f783ac;border-radius:0;padding:0 1px;background:transparent}
+    /* neg 负面动作——红·虚线下划线（浅字） */
+    .tt-root .tt-kw-neg{color:#ff8787;border-bottom:2px dashed #ff6b6b;border-radius:0;padding:0 1px;background:transparent}
     /* 暗主题：文字转浅色、底色/描边用同色系浅调，保持柔和且可读 */
     html.dark .tt-root .tt-kw-role{color:#b197fc;background:rgba(151,117,250,.20)}
     html.dark .tt-root .tt-kw-bld{color:#8ce99a;background:rgba(105,219,124,.18)}
