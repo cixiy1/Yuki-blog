@@ -128,8 +128,17 @@
     .tt-root .tt-kw-act{color:#f06595;border-bottom:2px solid #f783ac;border-radius:0;padding:0 1px;background:transparent}
     /* neg 负面动作——红·虚线下划线（浅字） */
     .tt-root .tt-kw-neg{color:#ff8787;border-bottom:2px dashed #ff6b6b;border-radius:0;padding:0 1px;background:transparent}
-    /* 划句：含重点词的整句铺一层淡荧光黄，标出影响范围 */
+    /* 划句：按「语义重点度」分档。含重点词的整句先铺一层淡荧光黄标出影响范围，
+       再按句子内容判档——必看句（时间/地点/要求动作）加浓一档 + 加粗 + 句首竖条。 */
     .tt-root .tt-sent{background:rgba(255,212,59,.16);border-radius:3px;padding:0 2px;box-decoration-break:clone;-webkit-box-decoration-break:clone}
+    .tt-root .tt-sent-core{background:rgba(255,212,59,.30);font-weight:600}
+    /* 必看句的句首竖条，纯装饰 */
+    .tt-root .tt-mark{display:inline-block;width:3px;height:11px;border-radius:2px;background:#ffa000;margin-right:4px;vertical-align:-1px}
+    /* 更新历顶部的重点度图例 */
+    .tt-log-hint{display:flex;flex-wrap:wrap;gap:12px;margin:8px 0 2px;font-size:10.5px;color:var(--tt-tx2)}
+    .tt-log-hint span{display:inline-flex;align-items:center}
+    .tt-log-hint em{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:4px;background:rgba(255,212,59,.30);border:1px solid rgba(255,212,59,.55)}
+    .tt-log-hint em.k{background:rgba(255,212,59,.16);border-color:rgba(255,212,59,.32)}
     /* 暗主题：文字转浅色、底色/描边用同色系浅调，保持柔和且可读 */
     html.dark .tt-root .tt-kw-role{color:#b197fc;background:rgba(151,117,250,.20);text-decoration-color:#b197fc}
     html.dark .tt-root .tt-kw-bld{color:#8ce99a;background:rgba(105,219,124,.18);text-decoration-color:#8ce99a}
@@ -138,6 +147,8 @@
     html.dark .tt-root .tt-kw-act{color:#faa2c1;border-bottom-color:#f783ac}
     html.dark .tt-root .tt-kw-neg{color:#ff8787;border-bottom-color:#ff6b6b}
     html.dark .tt-root .tt-sent{background:rgba(255,212,59,.11)}
+    html.dark .tt-root .tt-sent-core{background:rgba(255,212,59,.20)}
+    html.dark .tt-root .tt-mark{background:#ffd43b}
     .tt-log li:first-child{background:linear-gradient(90deg,color-mix(in srgb,var(--tt-log-c5) 14%,transparent),transparent);border-radius:8px}
     .tt-log li:first-child::after{content:"最新";flex:0 0 auto;align-self:center;font-size:10px;color:#fff;background:var(--tt-log-c5);border-radius:5px;padding:0 5px;line-height:16px;margin-left:2px}
     @media(max-width:640px){
@@ -246,6 +257,7 @@
   </div>
   <div class="tt-panel tt-log-panel">
     <div class="tt-top"><span class="tt-title">数据更新历</span><span class="tt-sub" id="tt-log-sub"></span></div>
+    <div class="tt-log-hint"><span><em></em>必看 · 时间/地点/要办的事</span><span><em class="k"></em>关注 · 相关但不必马上处理</span></div>
     <ul id="tt-changelog" class="tt-log"></ul>
   </div>
 </div>
@@ -307,19 +319,21 @@ function initClassSchedule() {
      向右吞并纯数字字母后缀（「G1楼401机房」「第12周考试」连成一片）；
      act/neg 是动词不连片。划句：含重点词的整句铺一层淡荧光黄（.tt-sent）。 */
   var TT_KW_MAP = {
-    "团支书": "role", "班长": "role", "辅导员": "role", "班委": "role", "团委": "role", "学生会": "role", "党支部": "role", "党员": "role", "预备党员": "role",
+    "团支书": "role", "班长": "role", "辅导员": "role", "班主任": "role", "班委": "role", "团委": "role", "学生会": "role", "党支部": "role", "党员": "role", "预备党员": "role", "负责人": "role",
     "修德楼": "bld", "强能楼": "bld", "教学楼": "bld", "大礼堂": "bld", "G1楼": "bld", "机房": "bld", "宿舍": "bld",
-    "图书馆": "bld", "实验楼": "bld", "报告厅": "bld", "体育馆": "bld", "操场": "bld", "食堂": "bld",
+    "图书馆": "bld", "实验楼": "bld", "报告厅": "bld", "体育馆": "bld", "田径场": "bld", "看台": "bld", "操场": "bld", "食堂": "bld", "北校区": "bld",
     "习概": "subj", "Web": "subj", "Java": "subj", "C语言": "subj", "军事理论": "subj", "体育": "subj",
     "高数": "subj", "英语": "subj", "数据结构": "subj", "计算机网络": "subj", "数据库": "subj", "线性代数": "subj",
-    "晚自习": "evt", "早自习": "evt", "体测": "evt", "入党谈话": "evt", "入党积极分子": "evt", "入党": "evt", "思想汇报": "evt", "团籍资料": "evt", "班委竞选": "evt", "反诈": "evt", "军训": "evt", "劳动实践": "evt",
-    "考试": "evt", "讲座": "evt", "抽查": "evt", "返校": "evt", "放假": "evt", "调休": "evt", "选课": "evt", "报到": "evt", "缴费": "evt", "消防演练": "evt", "运动会": "evt",
+    "晚自习": "evt", "早自习": "evt", "体测": "evt", "体质健康测试": "evt", "免测": "evt", "入党谈话": "evt", "入党积极分子": "evt", "入党": "evt", "思想汇报": "evt", "团籍资料": "evt", "班委竞选": "evt", "反诈": "evt", "军训服装": "evt", "军训": "evt", "劳动实践": "evt",
+    "考试": "evt", "讲座": "evt", "抽查": "evt", "考勤": "evt", "点名": "evt", "返校": "evt", "放假": "evt", "调休": "evt", "选课": "evt", "报到": "evt", "缴费": "evt", "消防演练": "evt", "运动会": "evt",
     "班会": "evt", "团课": "evt", "党课": "evt", "升旗": "evt", "查寝": "evt", "晚点名": "evt",
     "元旦": "evt", "中秋": "evt", "国庆": "evt", "寒假": "evt", "暑假": "evt",
     "改为": "act", "换至": "act", "新增": "act", "落实": "act", "调整": "act", "归档": "act",
     "顺延": "act", "提前": "act", "推迟": "act", "改期": "act", "迁移": "act", "替换": "act",
     "提交": "act", "上报": "act", "领取": "act", "填写": "act",
-    "取消": "neg", "停课": "neg", "停电": "neg", "停水": "neg", "暂停": "neg", "延期": "neg", "作废": "neg", "中止": "neg"
+    "请假": "act", "办理": "act", "购买": "act", "携带": "act", "参加": "act", "报名": "act",
+    "核对": "act", "申请": "act", "履行": "act", "到场": "act", "完成": "act",
+    "取消": "neg", "停课": "neg", "停电": "neg", "停水": "neg", "暂停": "neg", "延期": "neg", "作废": "neg", "中止": "neg", "旷课": "neg"
   };
   var TT_KW = Object.keys(TT_KW_MAP).sort(function (a, b) { return b.length - a.length; });
   var TT_KW_RE = new RegExp("(" + TT_KW.map(function (s) {
@@ -364,19 +378,86 @@ function initClassSchedule() {
     if (start < text.length) out.push([start, text.length]);
     return out;
   }
+  /* ------------------------------------------------------------------
+     语义重点度：读懂一句话再判断它值不值得看。
+     词表只能识别「这是楼宇」「这是科目」，回答不了「这条要不要我现在处理」。
+     真正决定重点度的是三类锚点：
+       ① 时空锚点 —— 什么时候 / 在哪里（读者据此决定要不要记进日程）
+       ② 行动锚点 —— 要求 + 具体动作（读者据此决定要做什么）
+       ③ 影响锚点 —— 对象范围 / 变更 / 负面（影响面与风险）
+     另加一类「元信息」降权：讲的是工具本身（面板/配色/构建）而非班级事务。
+     分档：core 必看 / key 关注 / plain 一般。
+     ------------------------------------------------------------------ */
+  var TT_RE_TIME = /\d{1,2}\s*[:：]\s*\d{2}|\d{1,2}\s*月\s*\d{1,2}\s*[日号]|\d{1,2}\s*\/\s*\d{1,2}|\d{1,2}\s*[-–—~～至到]\s*\d{1,2}|\d{1,2}\s*[点时]/;
+  var TT_RE_WEEK = /第\s*\d+\s*周|\d+\s*周|周[一二三四五六日天末]/;
+  var TT_RE_DAYPART = /上午|下午|晚上|中午|早上|凌晨/;
+  var TT_RE_RELATIVE = /今天|明天|后天|下周|本周|本周末|自.{0,12}?起/;
+  var TT_RE_DEADLINE = /截止|之前|以前|以内|前完成|前提交|前交|尽早|尽快|逾期/;
+  /* 地点后缀逐类收口：笼统的「任意中文 + 楼馆厅场室房」会把
+     「2026级室内」切成「级室」、「广东省教育厅」当成「教育厅」。 */
+  var TT_RE_PLACE = /[\u4e00-\u9fa5]{1,4}楼|[\u4e00-\u9fa5]{1,4}室(?![内外])|[\u4e00-\u9fa5]{1,4}馆|[\u4e00-\u9fa5]{1,4}房|礼堂|报告厅|音乐厅|多功能厅|大厅|田径场|球场|操场|篮球场|足球场|排球场|羽毛球场|网球场|广场|空地|看台|校区/;
+  var TT_RE_REQUIRE = /务必|必须|须|不得|禁止|注意|切记|记得|按时|准时|要求|需要|(?:^|[^申])请/;
+  var TT_RE_ACTION = /填写|提交|上报|领取|办理|准备|带上|携带|参加|出席|报名|缴费|购买|交至|交到|完成|申请|签字|核对|确认|请假|履行|到场|分流/;
+  var TT_RE_SCOPE = /全体|所有|各班|每人|全员|全班|不漏一人|都要|每位|负责人/;
+  var TT_RE_CHANGE = /改为|换成|换至|调课|补课|停课|取消|新增|推迟|顺延|提前|调整|搬迁|迁移|替换|变更/;
+  var TT_RE_NOTICE = /通知|公告|提醒|告知|另行|留意|为准/;
+  var TT_RE_META = /面板|标识|角标|配色|色板|界面|版式|样式|字体|布局|动画|交互|高亮|划词|划句|组件|字段|接口|缓存|离线|弹窗|版本|仓库|构建|部署|博客|App|后台|脚本|数据源|修复|优化|重构|回退|兜底|正文|条目|功能|支持|标签|格式|引用|来源|updated|meta\./g;
+
+  function ttSentenceTier(text, ranges, ss, se) {
+    var tags = {}, score = 0, hasBld = false, hasEvt = false, hasNeg = false, i;
+    for (i = 0; i < ranges.length; i++) {
+      var r = ranges[i];
+      if (r.start >= se || r.end <= ss) continue;
+      if (r.cat === "bld") hasBld = true;
+      else if (r.cat === "evt") hasEvt = true;
+      else if (r.cat === "neg") hasNeg = true;
+    }
+    function hit(re, tag, w) { if (re.test(text)) { score += w; if (tag) tags[tag] = 1; } }
+    hit(TT_RE_TIME, "time", 3);
+    hit(TT_RE_WEEK, "time", 2);
+    hit(TT_RE_DAYPART, "time", 1.5);
+    hit(TT_RE_RELATIVE, "time", 2);
+    hit(TT_RE_DEADLINE, "deadline", 2.5);
+    if (hasBld || TT_RE_PLACE.test(text)) { score += 2.5; tags.place = 1; }
+    var req = TT_RE_REQUIRE.test(text), act = TT_RE_ACTION.test(text);
+    if (req) { score += 2.5; tags.require = 1; }
+    if (act) { score += 2; tags.action = 1; }
+    if (hasEvt) { score += 1; tags.event = 1; }
+    if (hasNeg) { score += 2; tags.neg = 1; }
+    hit(TT_RE_SCOPE, "scope", 2);
+    hit(TT_RE_CHANGE, "change", 1.5);
+    hit(TT_RE_NOTICE, "notice", 1.5);
+    if (/\d/.test(text)) score += 0.5;
+    var metaHits = 0, mm;
+    TT_RE_META.lastIndex = 0;
+    while ((mm = TT_RE_META.exec(text))) { if (!mm[0]) { TT_RE_META.lastIndex++; continue; } metaHits++; }
+    if (metaHits) { score -= 3 * (metaHits > 2 ? 2 : metaHits); tags.meta = 1; }
+    /* 定档：光有语气词（「请注意」）不算必看，必须落到
+       「时空锚点」或「要求 + 具体动作」上才算。 */
+    var anchored = tags.time || tags.place || tags.deadline;
+    var actionable = req && act;
+    var tier = "plain";
+    if ((anchored && score >= 4.5) || (actionable && score >= 5) || score >= 9) tier = "core";
+    else if (score >= 2) tier = "key";
+    return tier;
+  }
+  function ttSentences(text, ranges) {
+    return ttSentenceRanges(text).map(function (s) {
+      return { start: s[0], end: s[1], tier: ttSentenceTier(text.slice(s[0], s[1]), ranges, s[0], s[1]) };
+    });
+  }
   function hlLog(text) {
     text = String(text == null ? "" : text);
     var ranges = ttKwRanges(text);
-    if (!ranges.length) return esc(text);
+    var sentences = ttSentences(text, ranges);
+    var marked = 0;
+    for (var i = 0; i < sentences.length; i++) if (sentences[i].tier !== "plain") marked++;
+    if (!ranges.length && !marked) return esc(text);
     var out = "";
-    var sentences = ttSentenceRanges(text);
     for (var i = 0; i < sentences.length; i++) {
-      var ss = sentences[i][0], se = sentences[i][1], marked = false, p = ss;
-      for (var j = 0; j < ranges.length; j++) {
-        var r = ranges[j];
-        if (r.start < se && r.end > ss) { marked = true; break; }
-      }
-      if (marked) out += '<span class="tt-sent">';
+      var ss = sentences[i].start, se = sentences[i].end, tier = sentences[i].tier, p = ss;
+      if (tier === "core") out += '<i class="tt-mark"></i><span class="tt-sent tt-sent-core">';
+      else if (tier === "key") out += '<span class="tt-sent">';
       for (var j = 0; j < ranges.length; j++) {
         var r = ranges[j];
         if (r.start >= se || r.end <= ss) continue;
@@ -386,7 +467,7 @@ function initClassSchedule() {
         p = re2;
       }
       if (p < se) out += esc(text.slice(p, se));
-      if (marked) out += "</span>";
+      if (tier !== "plain") out += "</span>";
     }
     return out;
   }
@@ -684,7 +765,7 @@ function initClassSchedule() {
       else {
         box.className = "tt-changes";
         box.innerHTML = '<h4>本周调整<span class="tt-chg-n">共 ' + chg.length + " 条</span></h4><ul>" + chg.map(function (c, ci) {
-          return '<li class="li-' + c.t + '" style="--tt-d:' + ci + '">' + esc(c.txt) + "</li>";
+          return '<li class="li-' + c.t + '" style="--tt-d:' + ci + '">' + hlLog(c.txt) + "</li>";
         }).join("") + "</ul>";
       }
     }
