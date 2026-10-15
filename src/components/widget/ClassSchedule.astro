@@ -95,6 +95,14 @@
     .tt-nt-title{font-size:13px;font-weight:500}
     .tt-nt-text{font-size:12px;color:var(--tt-tx);line-height:1.6;white-space:pre-wrap}
     .tt-nt-none{color:var(--tt-tx2);opacity:.8;font-size:12px}
+    /* ===== 数据更新历面板 ===== */
+    .tt-log-panel{margin-top:14px}
+    .tt-log-panel .tt-top{margin-bottom:10px}
+    .tt-log{list-style:none;margin:0;padding:0}
+    .tt-log li{display:flex;gap:10px;padding:7px 0;border-top:1px solid var(--tt-line);font-size:12px}
+    .tt-log li:first-child{border-top:none}
+    .tt-log-date{flex:0 0 auto;min-width:78px;color:var(--tt-tx2);font-variant-numeric:tabular-nums;white-space:nowrap}
+    .tt-log-text{flex:1;color:var(--tt-tx);line-height:1.6}
 
     /* ===== 交互反馈：按钮 / 周次切换 / 详情面板（2026-10-10）===== */
     /* —— 按钮：悬停描边 + 方向箭头位移 + 按下回弹 + 点击涟漪 + 键盘焦点环 + 边界置灰 —— */
@@ -189,6 +197,10 @@
     <div class="tt-legend"><span><i style="background:var(--tt-on-bg);border:1px solid var(--tt-on-bd)"></i>本周有课</span><span><i style="background:var(--tt-off-bg)"></i>本周不上</span><span><i style="background:var(--tt-f-room-bg)"></i>改地点</span><span><i style="background:var(--tt-f-mv-bg)"></i>调课 / 对调</span><span><i style="background:var(--tt-f-cx-bg)"></i>停课</span><span><i style="background:var(--tt-add-bg);border:1px solid var(--tt-add-bd)"></i>临时新增</span><span><i style="background:var(--tt-study-bg);border:1px solid var(--tt-study-bd)"></i>晚自习</span></div>
     <div class="tt-foot"><span id="tt-meta"></span></div>
     <div class="tt-sec"><div class="tt-h4">北校区作息时间</div><ul id="tt-periods" class="tt-periods"></ul></div>
+  </div>
+  <div class="tt-panel tt-log-panel">
+    <div class="tt-top"><span class="tt-title">数据更新历</span><span class="tt-sub" id="tt-log-sub"></span></div>
+    <ul id="tt-changelog" class="tt-log"></ul>
   </div>
 </div>
 
@@ -590,6 +602,21 @@ function initClassSchedule() {
     }).join("");
   }
 
+  function renderChangelog() {
+    var box = document.getElementById("tt-changelog");
+    if (!box) return;
+    var arr = (DATA.meta && DATA.meta.changelog) || [];
+    if (!arr.length) {
+      box.innerHTML = '<li class="tt-log-text" style="color:var(--tt-tx2)">暂无更新记录</li>';
+      return;
+    }
+    box.innerHTML = arr.map(function (n) {
+      return '<li><span class="tt-log-date">' + esc(n.date || "") + '</span><span class="tt-log-text">' + esc(n.content || "") + "</span></li>";
+    }).join("");
+    var sub = document.getElementById("tt-log-sub");
+    if (sub && DATA.meta && DATA.meta.updated) sub.textContent = "最近更新于 " + DATA.meta.updated;
+  }
+
   /* 重播一次 CSS 动画：先摘类再强制重排，再用定时器清理。
      · 必须"摘类 → 重排 → 加类"，否则同方向连续切换不会重播；
      · 必须清理，否则类会常驻、fill 会永久覆盖 :active 等交互态；
@@ -764,11 +791,12 @@ function initClassSchedule() {
       }
       renderPeriods();
       renderNotices();
+      renderChangelog();
       setWeek(realWeek >= 1 ? realWeek : 1, { silent: true });
       var meta = document.getElementById("tt-meta");
       if (meta) {
         meta.textContent = d.meta.className + " · " + d.meta.campus + " · " + d.meta.term +
-          " · 数据更新 " + d.meta.updated;
+          " · 最近更新于 " + d.meta.updated;
       }
     })
     .catch(function () {
