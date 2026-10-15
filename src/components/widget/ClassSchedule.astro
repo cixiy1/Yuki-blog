@@ -114,6 +114,9 @@
     .tt-log li::before{content:"";position:absolute;left:0;top:10px;bottom:10px;width:4px;border-radius:3px;background:var(--lc)}
     .tt-log-date{flex:0 0 auto;min-width:86px;color:var(--lc);background:color-mix(in srgb,var(--lc) 16%,var(--tt-panel));border-radius:6px;padding:1px 6px;font-variant-numeric:tabular-nums;white-space:nowrap;text-align:center;align-self:center}
     .tt-log-text{flex:1;color:var(--tt-tx);line-height:1.6}
+    /* 更新历正文重点词高亮：单一强调色（蓝），不凑彩虹，保持克制；
+       仅加重可读的关键词（角色/楼宇/事项/动作），不做整段花哨装饰。 */
+    .tt-root .tt-kw{font-weight:600;color:var(--tt-log-c5);background:color-mix(in srgb,var(--tt-log-c5) 16%,var(--tt-panel));border-radius:4px;padding:0 3px;box-decoration-break:clone;-webkit-box-decoration-break:clone}
     .tt-log li:first-child{background:linear-gradient(90deg,color-mix(in srgb,var(--tt-log-c5) 14%,transparent),transparent);border-radius:8px}
     .tt-log li:first-child::after{content:"最新";flex:0 0 auto;align-self:center;font-size:10px;color:#fff;background:var(--tt-log-c5);border-radius:5px;padding:0 5px;line-height:16px;margin-left:2px}
 
@@ -266,6 +269,24 @@ function initClassSchedule() {
     });
   }
   /* 更新历日期格式化：YYYY-MM-DD HH:MM → MM-DD HH:MM（紧凑；无时间则仅 MM-DD） */
+  /* 更新历正文重点词高亮：渲染时对关键词加 <b class="tt-kw"> 强调（单一蓝强调色，克制不华丽）。
+     关键词按长度降序匹配，避免「军事理论」被拆成「理论」之类。 */
+  var TT_KW = ["劳动实践","军事理论","入党谈话","团籍资料","班委竞选","修德楼","强能楼","团支书","晚自习","体测","习概","机房","反诈","军训","宿舍","班长","Java","Web","改为","换至","新增","取消","停课","落实","调整","归档"];
+  TT_KW.sort(function (a, b) { return b.length - a.length; });
+  var TT_KW_RE = new RegExp("(" + TT_KW.map(function (s) {
+    return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  }).join("|") + ")", "g");
+  function hlLog(text) {
+    var out = "", last = 0, m, re = TT_KW_RE;
+    re.lastIndex = 0;
+    while ((m = re.exec(text))) {
+      if (m[0].length === 0) { re.lastIndex++; continue; }
+      out += esc(text.slice(last, m.index)) + '<b class="tt-kw">' + esc(m[0]) + "</b>";
+      last = m.index + m[0].length;
+    }
+    out += esc(text.slice(last));
+    return out;
+  }
   function fmtLogDate(s) {
     var m = String(s || "").match(/(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}:\d{2}))?/);
     if (!m) return s;
@@ -630,7 +651,7 @@ function initClassSchedule() {
       return;
     }
     box.innerHTML = arr.map(function (n) {
-      return '<li><span class="tt-log-date">' + esc(fmtLogDate(n.date || "")) + '</span><span class="tt-log-text">' + esc(n.content || "") + "</span></li>";
+      return '<li><span class="tt-log-date">' + esc(fmtLogDate(n.date || "")) + '</span><span class="tt-log-text">' + hlLog(n.content || "") + "</span></li>";
     }).join("");
     var sub = document.getElementById("tt-log-sub");
     if (sub && DATA.meta && DATA.meta.updated) sub.textContent = "最近更新于 " + fmtLogDate(DATA.meta.updated);
