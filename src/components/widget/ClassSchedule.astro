@@ -762,8 +762,10 @@ function initClassSchedule() {
       rows.splice(3, 0, ["原时间", DAYS[oldPos.day - 1] + " " +
         (slotInfo(oldPos.slot).label || oldPos.slot)]);
     }
+    /* 详情里的说明是「一段话」级别的长内容，同样走高亮（只着色，不上底纹）——
+       否则这一块是整页唯一一段没有任何重点提示的正文。 */
     var notes = e.changes.map(function (c) {
-      return esc(changeText(e, c) + (c.note ? "：" + c.note : ""));
+      return hlLog(changeText(e, c) + (c.note ? "：" + c.note : ""), true);
     });
     return '<div class="tt-dtop"><span class="tt-dname">' + esc(e.name || e.short) +
       '</span><button type="button" class="tt-dclose" data-close="1" aria-label="关闭详情">×</button></div>' +
