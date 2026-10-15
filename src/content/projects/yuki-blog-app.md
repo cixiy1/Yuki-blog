@@ -4,7 +4,7 @@ published: 2026-10-15
 draft: false
 order: 95
 description: "给软件2615 班写的 Flutter 班级应用。核心是动态课程表：周次自动推算、六种调课类型、与博客课表数据同源，改一次课表 App 自动同步，不用发版。"
-image: "https://opengraph.githubassets.com/1/cixiy1/myclass"
+image: "https://opengraph.githubassets.com/1/cixiy1/Yuki-Blog-App"
 status: "developing"
 tags:
   - Flutter
@@ -14,7 +14,7 @@ tags:
 link:
   - label: "GitHub"
     icon: "fa7-brands:github"
-    value: "https://github.com/cixiy1/myclass"
+    value: "https://github.com/cixiy1/Yuki-Blog-App"
 ---
 
 ## 项目简介
