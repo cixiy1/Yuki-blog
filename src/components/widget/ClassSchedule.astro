@@ -121,28 +121,27 @@
     .tt-log li::before{content:"";position:absolute;left:0;top:10px;bottom:10px;width:4px;border-radius:3px;background:var(--lc)}
     .tt-log-date{flex:0 0 auto;min-width:86px;color:var(--lc);background:color-mix(in srgb,var(--lc) 16%,var(--tt-panel));border-radius:6px;padding:1px 6px;font-variant-numeric:tabular-nums;white-space:nowrap;text-align:center;align-self:center}
     .tt-log-text{flex:1;color:var(--tt-tx);line-height:1.6}
-    /* 更新历正文重点词高亮：6 类，颜色×形式组合，信息有区分。
-       颜色用 currentColor 派生底色/描边，亮暗主题自动适配。 */
+    /* 更新历正文重点词高亮：6 类，颜色×形式组合，信息有区分；配色用浅色/柔和。 */
     .tt-root .tt-kw{font-weight:600;border-radius:4px;padding:0 3px;box-decoration-break:clone;-webkit-box-decoration-break:clone}
-    /* role 角色——紫·实底 */
-    .tt-root .tt-kw-role{color:#6741d9;background:color-mix(in srgb,currentColor 14%,transparent)}
-    /* bld 楼宇——绿·实底 */
-    .tt-root .tt-kw-bld{color:#2b8a3e;background:color-mix(in srgb,currentColor 14%,transparent)}
+    /* role 角色——紫·浅底 */
+    .tt-root .tt-kw-role{color:#5f3dc4;background:rgba(151,117,250,.18)}
+    /* bld 楼宇——绿·浅底 */
+    .tt-root .tt-kw-bld{color:#2b8a3e;background:rgba(105,219,124,.20)}
     /* subj 科目——橙·描边（无底色） */
-    .tt-root .tt-kw-subj{color:#d9480f;border:1.5px solid color-mix(in srgb,currentColor 55%,transparent);background:transparent}
-    /* evt 事项——蓝·实底 */
-    .tt-root .tt-kw-evt{color:#1971c2;background:color-mix(in srgb,currentColor 14%,transparent)}
+    .tt-root .tt-kw-subj{color:#d9480f;border:1.5px solid #ffa94d;background:transparent}
+    /* evt 事项——蓝·浅底 */
+    .tt-root .tt-kw-evt{color:#1971c2;background:rgba(77,171,247,.18)}
     /* act 中性动作——粉·下划线（无底色） */
-    .tt-root .tt-kw-act{color:#a61e4d;border-bottom:2px solid currentColor;border-radius:0;padding:0 1px;background:transparent}
+    .tt-root .tt-kw-act{color:#c2255c;border-bottom:2px solid #f783ac;border-radius:0;padding:0 1px;background:transparent}
     /* neg 负面动作——红·虚线下划线 */
-    .tt-root .tt-kw-neg{color:#c92a2a;border-bottom:2px dashed currentColor;border-radius:0;padding:0 1px;background:transparent}
-    /* 暗主题：仅换文字色，底色/描边由 currentColor 自动派生 */
-    html.dark .tt-root .tt-kw-role{color:#b197fc}
-    html.dark .tt-root .tt-kw-bld{color:#8ce99a}
-    html.dark .tt-root .tt-kw-subj{color:#ffa94d}
-    html.dark .tt-root .tt-kw-evt{color:#74c0fc}
-    html.dark .tt-root .tt-kw-act{color:#faa2c1}
-    html.dark .tt-root .tt-kw-neg{color:#ff8787}
+    .tt-root .tt-kw-neg{color:#e03131;border-bottom:2px dashed #ff6b6b;border-radius:0;padding:0 1px;background:transparent}
+    /* 暗主题：文字转浅色、底色/描边用同色系浅调，保持柔和且可读 */
+    html.dark .tt-root .tt-kw-role{color:#b197fc;background:rgba(151,117,250,.20)}
+    html.dark .tt-root .tt-kw-bld{color:#8ce99a;background:rgba(105,219,124,.18)}
+    html.dark .tt-root .tt-kw-subj{color:#ffa94d;border-color:#ffa94d}
+    html.dark .tt-root .tt-kw-evt{color:#74c0fc;background:rgba(77,171,247,.20)}
+    html.dark .tt-root .tt-kw-act{color:#faa2c1;border-bottom-color:#f783ac}
+    html.dark .tt-root .tt-kw-neg{color:#ff8787;border-bottom-color:#ff6b6b}
     .tt-log li:first-child{background:linear-gradient(90deg,color-mix(in srgb,var(--tt-log-c5) 14%,transparent),transparent);border-radius:8px}
     .tt-log li:first-child::after{content:"最新";flex:0 0 auto;align-self:center;font-size:10px;color:#fff;background:var(--tt-log-c5);border-radius:5px;padding:0 5px;line-height:16px;margin-left:2px}
 
