@@ -3,7 +3,7 @@ title: "Yuki-Blog App"
 published: 2026-10-15
 draft: false
 order: 95
-description: "给软件2615 班写的 Flutter 班级应用。核心是动态课程表：周次自动推算、六种调课类型、与博客课表数据同源，改一次课表 App 自动同步，不用发版。"
+description: "给软件2615 班写的 Flutter 班级应用。核心是动态课程表：周次自动推算、六种调课类型、与博客课表数据同源，改一次课表 App 自动同步，不用发版；自带应用内更新检查。"
 image: "https://opengraph.githubassets.com/1/cixiy1/Yuki-Blog-App"
 status: "developing"
 tags:
@@ -15,11 +15,14 @@ link:
   - label: "GitHub"
     icon: "fa7-brands:github"
     value: "https://github.com/cixiy1/Yuki-Blog-App"
+  - label: "下载 APK"
+    icon: "material-symbols:download"
+    value: "https://github.com/cixiy1/Yuki-Blog-App/releases/latest"
 ---
 
 ## 项目简介
 
-**Yuki-Blog App**（包名 `yuki_blog_app`）是给软件2615 班写的班级应用，用 Flutter 开发，一套代码跑 Android / iOS / macOS / Windows / Web。当前已完成的核心模块是**动态课程表**——把博客上那套按周次自动推算、支持临时调课的课表搬到了 App 里。
+**Yuki-Blog App**（应用显示名 **Yuki Blog**，Dart 包名 `yuki_blog_app`，应用 ID `com.yiyu14.yuki_blog_app`）是给软件2615 班写的班级应用，用 Flutter 开发，一套代码跑 Android / iOS / macOS / Windows / Web。当前已完成的核心模块是**动态课程表**——把博客上那套按周次自动推算、支持临时调课的课表搬到了 App 里。
 
 ## 动态课程表
 
@@ -29,8 +32,13 @@ link:
 - **课程详情**：点击格子展开详情面板，再点同格或按 × 收起。
 - **本周调整面板**：把本周所有调课集中列出，无调整时整块隐藏。
 - **通知区**：位于课表网格下方，按真实周次过滤、过期自动消失，标题与正文同款 6 类关键词高亮。
-- **应用内更新**：启动时静默检查 GitHub Releases 最新版本，有更新弹窗展示变更说明并一键跳转下载（APK 由 GitHub Actions 打 tag 自动构建发布）；设置页支持手动检查。
 - **数据更新历**：底部多彩面板（彩虹渐变标题、8 色循环色条与日期徽章、最新一条高亮角标），正文按 6 类关键词高亮（角色/楼宇/科目/事项/动作/负面动作）并采用竖排布局，读取与博客线同构的 `meta.changelog`；网络同步失败回退离线数据时置顶提醒「可能不是最新」。
+
+## 应用内更新
+
+App 启动时会静默查询 GitHub Releases 的最新版本，与本地版本做语义化比较（兼容 `v` 前缀与 `+build` 后缀）；有新版本则弹窗展示变更说明，点「立即更新」直接用系统浏览器打开 APK 直链下载。设置页也提供手动检查入口，手动检查时无论有无更新都会给出结果反馈。
+
+最新安装包见 [Releases](https://github.com/cixiy1/Yuki-Blog-App/releases/latest)。
 
 ## 数据同步：与博客同源
 
@@ -51,20 +59,27 @@ link:
 | 框架 | Flutter（Dart SDK ^3.13.5）+ Material 3 |
 | 路由 | go_router（`ShellRoute` 包一层抽屉导航壳） |
 | 网络 | http |
+| 更新检查 | package_info_plus（读本地版本）+ GitHub Releases API + url_launcher |
+| 构建分发 | GitHub Actions（打 `v*` tag 自动跑测试、构建 release APK 并发 Release） |
 | 主题 | 亮/暗双主题跟随系统，课表状态色从 `ColorScheme` 派生 |
+
+## 构建与分发
+
+Android 安装包不走手动打包：给仓库打一个 `v*` 形式的 tag，GitHub Actions（`.github/workflows/release.yml`）会自动执行 `flutter pub get` → `flutter test` → `flutter build apk --release`，把产物重命名为 `yuki-blog-<tag>.apk` 并发布到 Releases。App 内更新检查就是读这个 Release 的最新 tag 与本地版本比较，有新版弹窗并跳转直链下载。
 
 ## 目录结构
 
 ```text
 lib/
 ├── main.dart / app/          入口、MaterialApp.router、主题、路由表
-├── core/                     数据源（远程三源回退 / 本地 asset / 内存）+ 课表解析器
-├── models/timetable.dart     数据模型（meta / courses / overrides / notices）
+├── core/                     数据源（远程三源回退 / 本地 asset / 内存）+ 课表解析器 + 更新检查服务
+├── models/timetable.dart     数据模型（meta / courses / overrides / notices / changelog）
 └── features/
     ├── home/                 HomeShell 导航壳（动态课程表 / 待办 / 设置）
-    ├── schedule/             课表页 + 网格 / 周次条 / 详情 / 调整 / 通知 / 图例
+    ├── schedule/             课表页 + 网格 / 周次条 / 详情 / 调整 / 通知 / 图例 / 更新历
+    ├── update/               发现新版本弹窗
     ├── todo/                 待办（占位）
-    └── setting/              设置（占位）
+    └── setting/              设置（检查更新）
 ```
 
 ## 进度
@@ -73,7 +88,10 @@ lib/
 - [x] 课表网格、周次切换、课程详情、本周调整、通知区
 - [x] 三源网络同步 + 本地 asset 兜底
 - [x] 数据更新历面板与「最近更新于」标识
+- [x] 通知与更新历的 6 类关键词高亮
+- [x] 应用内更新检查（GitHub Releases）
+- [x] GitHub Actions 自动构建发布 APK
 - [x] 亮/暗主题与自适应图标
 - [ ] 待办页
-- [ ] 设置页
-- [ ] 打包分发（APK / IPA）
+- [ ] 设置页其他项
+- [ ] iOS 打包分发
