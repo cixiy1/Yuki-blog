@@ -100,7 +100,7 @@
     .tt-log-panel .tt-top{margin-bottom:10px;align-items:center}
     .tt-log-panel .tt-title{font-weight:600;background:linear-gradient(90deg,#ff6b6b,#ffa94d,#4dabf7,#9775fa,#f783ac);-webkit-background-clip:text;background-clip:text;color:transparent}
     .tt-log-panel .tt-sub{color:var(--tt-log-c5);font-weight:500}
-    .tt-log{list-style:none;margin:0;padding:0}
+    .tt-log{list-style:none;margin:0;padding:0;max-height:360px;overflow-y:auto;padding-right:4px}
     .tt-log li{position:relative;display:flex;gap:10px;padding:8px 0 8px 14px;border-top:1px solid var(--tt-line);font-size:12px}
     .tt-log li:first-child{border-top:none}
     .tt-log li:nth-child(8n+1){--lc:var(--tt-log-c1)}
@@ -112,7 +112,7 @@
     .tt-log li:nth-child(8n+7){--lc:var(--tt-log-c7)}
     .tt-log li:nth-child(8n+8){--lc:var(--tt-log-c8)}
     .tt-log li::before{content:"";position:absolute;left:0;top:10px;bottom:10px;width:4px;border-radius:3px;background:var(--lc)}
-    .tt-log-date{flex:0 0 auto;min-width:74px;color:var(--lc);background:color-mix(in srgb,var(--lc) 16%,var(--tt-panel));border-radius:6px;padding:1px 6px;font-variant-numeric:tabular-nums;white-space:nowrap;text-align:center;align-self:center}
+    .tt-log-date{flex:0 0 auto;min-width:86px;color:var(--lc);background:color-mix(in srgb,var(--lc) 16%,var(--tt-panel));border-radius:6px;padding:1px 6px;font-variant-numeric:tabular-nums;white-space:nowrap;text-align:center;align-self:center}
     .tt-log-text{flex:1;color:var(--tt-tx);line-height:1.6}
     .tt-log li:first-child{background:linear-gradient(90deg,color-mix(in srgb,var(--tt-log-c5) 14%,transparent),transparent);border-radius:8px}
     .tt-log li:first-child::after{content:"最新";flex:0 0 auto;align-self:center;font-size:10px;color:#fff;background:var(--tt-log-c5);border-radius:5px;padding:0 5px;line-height:16px;margin-left:2px}
@@ -264,6 +264,12 @@ function initClassSchedule() {
     return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) {
       return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c];
     });
+  }
+  /* 更新历日期格式化：YYYY-MM-DD HH:MM → MM-DD HH:MM（紧凑；无时间则仅 MM-DD） */
+  function fmtLogDate(s) {
+    var m = String(s || "").match(/(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}:\d{2}))?/);
+    if (!m) return s;
+    return m[2] + "-" + m[3] + (m[4] ? " " + m[4] : "");
   }
   function monday(w) {
     var p = DATA.meta.week1Monday.split("-");
@@ -624,10 +630,10 @@ function initClassSchedule() {
       return;
     }
     box.innerHTML = arr.map(function (n) {
-      return '<li><span class="tt-log-date">' + esc(n.date || "") + '</span><span class="tt-log-text">' + esc(n.content || "") + "</span></li>";
+      return '<li><span class="tt-log-date">' + esc(fmtLogDate(n.date || "")) + '</span><span class="tt-log-text">' + esc(n.content || "") + "</span></li>";
     }).join("");
     var sub = document.getElementById("tt-log-sub");
-    if (sub && DATA.meta && DATA.meta.updated) sub.textContent = "最近更新于 " + DATA.meta.updated;
+    if (sub && DATA.meta && DATA.meta.updated) sub.textContent = "最近更新于 " + fmtLogDate(DATA.meta.updated);
   }
 
   /* 重播一次 CSS 动画：先摘类再强制重排，再用定时器清理。
