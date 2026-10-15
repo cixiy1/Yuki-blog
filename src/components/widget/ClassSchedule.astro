@@ -814,7 +814,16 @@ function initClassSchedule() {
         "<em>" + (st.time || "") + "</em></i>";
       for (var d = 1; d <= maxDay; d++) {
         var cell = null;
-        res.entries.forEach(function (e) { if (e.day === d && e.slot === sk) cell = e; });
+        /* 一格只显示一条。优先级：本周实际发生（有课 / 停课 / 新增）> 晚自习 > 非本周占位；
+           同级后者胜出。抽成显式规则（原先靠 forEach 最后一个胜出）是为了别让「非本周」的旧课卡
+           压在晚自习上 —— 例：周三 9-10 的 Java（c10）只在第 4 周，其余周该格应是晚自习。
+           与 App 端 timetable_resolver.dart 的 cellPriority 保持一致。 */
+        var cellRank = -1;
+        res.entries.forEach(function (e) {
+          if (e.day !== d || e.slot !== sk) return;
+          var rk = e.selfStudy ? 1 : (e.active || e.cancelled) ? 2 : 0;
+          if (rk >= cellRank) { cell = e; cellRank = rk; }
+        });
         if (!cell) { html += '<div class="tt-cell is-empty" style="--tt-d:' + (ri + d) + '"></div>'; continue; }
         var cls = "tt-cell " + (cell.cancelled ? "is-cancel" : cell.selfStudy ? "is-study" : cell.active ? (cell.temp ? "is-add" : "is-on") : "is-off");
         var flag = "";
