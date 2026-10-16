@@ -3,7 +3,7 @@ title: "Yuki-Blog App"
 published: 2026-10-15
 draft: false
 order: 95
-description: "给软件2615 班写的 Flutter 班级应用。核心是动态课程表：周次自动推算、六种调课类型、与博客课表数据同源，改一次课表 App 自动同步，不用发版；自带应用内更新检查。"
+description: "给软件2615 班写的 Flutter 班级应用。核心是动态课程表：周次自动推算、六种调课类型、与博客课表数据同源，改一次课表 App 自动同步，不用发版；标题栏照本站导航栏做了同款光感沉浸，自带应用内更新检查。"
 image: "https://opengraph.githubassets.com/1/cixiy1/Yuki-Blog-App"
 status: "developing"
 tags:
@@ -39,6 +39,18 @@ link:
 - **高亮密度受控**：底色只留「必看」一档、加粗只留「人工标注」，标注本身也按「每条至多一处必看 + 一处关注」收紧——更新历 + 通知里被标注的字数占比约 24%（此前为 45%），一屏扫下来只有少数几处真正跳出来，其余保持安静。本周调整面板则整层关掉定档，只保留词表着色。
 - **算法与词表的分工**：固定词表（角色 / 楼宇 / 科目 / 事项 / 动作 / 负面六类）只负责**配色**与划词连片，不再决定重点；锚点打分算法退为**兜底**——只在该段一个标注都没有时（未审阅内容）才接手判档。人工判断重要性、词表给颜色，各司其职；遇到运行时拼出来的、无法内联标注的文案，就直接去掉定档这一层。
 
+## 光感沉浸标题栏
+
+App 的标题栏直接照本站导航栏（Firefly 主题 semifull 模式）的配方搬过来的，两边观感一致：
+
+- **贴顶全透明**：无背景、无模糊、无阴影、无边框，页面内容直接穿透到标题栏与状态栏之下；
+- **滚动过 50px 进滚动态**：`card-bg` 45% 底色 + 20px 毛玻璃，叠加顶部内高光与底部分发丝两条**阴影细线**（是 `box-shadow` 不是 `border`，所以全程无边框）；
+- **过渡 0.36s** `cubic-bezier(0.22, 1, 0.36, 1)`，与网页版 `--navbar-surface-transition` 同一条曲线；
+- **模糊不跟手**：滚动进度先二值化，模糊由一次渐变动画完成，滚一屏只触发十几次重算，不会每帧回读画面掉帧；
+- 封装成公共组件（`ImmersiveAppBar` / `ImmersiveScaffold`），任何页面一行接入。
+
+Web 端有个引擎坑：Flutter Web 画 `BackdropFilter` 时不对图层做裁剪，滤镜会糊到整张背景上，表现为「整页糊成一片」。所以 Web 上这一层退化为「加浓底色 + 两条细线」，Android / iOS 走完整的毛玻璃配方。
+
 ## 应用内更新
 
 App 启动时会静默查询 GitHub Releases 的最新版本，与本地版本做语义化比较（兼容 `v` 前缀与 `+build` 后缀）；有新版本则弹窗展示变更说明，并给出两条更新路径：**应用内下载**（带进度条，含百分比 / 已下载大小 / 实时速度 / 预计剩余时间，可随时取消）下载完成后**直接唤起系统安装器**；或**浏览器下载**跳转直链自行安装。设置页也提供手动检查入口，手动检查时无论有无更新都会给出结果反馈。
@@ -73,6 +85,8 @@ App 启动时会静默查询 GitHub Releases 的最新版本，与本地版本�
 
 Android 安装包不走手动打包：给仓库打一个 `v*` 形式的 tag，GitHub Actions（`.github/workflows/release.yml`）会自动执行 `flutter pub get` → `flutter test` → `flutter build apk --release`，把产物重命名为 `yuki-blog-<tag>.apk` 并发布到 Releases。App 内更新检查就是读这个 Release 的最新 tag 与本地版本比较；有新版可**应用内下载**（下载到应用缓存后经 FileProvider 交给系统安装器，需系统首次授权「允许本应用安装应用」），也可选择跳转浏览器下载。
 
+**固定发版签名**：release 包统一用一把固定 keystore 签名，密钥库与口令不进仓库（本地放在仓库外的备份目录，CI 从 GitHub Secrets 还原成 base64 文件再构建），构建日志里会打印证书指纹方便核对。签名不固定的话，每台机器 / 每个 CI runner 生成的调试证书都不一样，新包会因签名冲突装不上——应用内更新这条链直接失效，所以这一步是必须的。
+
 ## 目录结构
 
 ```text
@@ -80,6 +94,7 @@ lib/
 ├── main.dart / app/          入口、MaterialApp.router、主题、路由表
 ├── core/                     数据源（远程三源回退 / 本地 asset / 内存）+ 课表解析器 + 更新检查服务
 ├── models/timetable.dart     数据模型（meta / courses / overrides / notices / changelog）
+├── widgets/                  公共组件（光感沉浸标题栏 ImmersiveAppBar / ImmersiveScaffold）
 └── features/
     ├── home/                 HomeShell 导航壳（动态课程表 / 待办 / 设置）
     ├── schedule/             课表页 + 网格 / 周次条 / 详情 / 调整 / 通知 / 图例 / 更新历
@@ -102,6 +117,8 @@ lib/
 - [x] 应用内更新检查（GitHub Releases）
 - [x] 应用内下载更新包（进度条 / 取消 / 下载完唤起系统安装器）+ 浏览器下载双通道
 - [x] GitHub Actions 自动构建发布 APK
+- [x] 固定发版签名（keystore 不进仓库 + CI 从 Secrets 还原，保证能覆盖安装）
+- [x] 光感沉浸标题栏（照本站导航栏 semifull 配方，封装成公共组件）
 - [x] 亮/暗主题与自适应图标
 - [ ] 待办页
 - [ ] 设置页其他项
