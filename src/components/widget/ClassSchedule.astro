@@ -1131,6 +1131,19 @@ function initClassSchedule() {
         meta.innerHTML = d.meta.className + " · " + d.meta.campus + " · " + d.meta.term +
           ' · 最近更新于 <b style="color:var(--tt-log-c5);font-weight:600">' + d.meta.updated + "</b>";
       }
+      /* 文章底部 license 信息卡：把「发布于 <published>」改成「更新于 <meta.updated>」，
+         与数据更新历保持同源（构建期 frontmatter 是静态的，改课表不会自动变）。 */
+      var lic = document.querySelector(".license-container");
+      if (lic) {
+        var ldivs = lic.getElementsByTagName("div");
+        for (var li = 0; li < ldivs.length; li++) {
+          if (ldivs[li].textContent.trim() === "发布于" && ldivs[li].nextElementSibling) {
+            ldivs[li].textContent = "更新于";
+            ldivs[li].nextElementSibling.textContent = d.meta.updated;
+            break;
+          }
+        }
+      }
     })
     .catch(function () {
       var g = document.getElementById("tt-grid");
