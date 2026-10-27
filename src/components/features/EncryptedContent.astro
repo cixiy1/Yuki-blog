@@ -67,6 +67,7 @@ const labels = {
       </form>
 
       <p id="password-error" class="text-xs text-red-500 dark:text-red-400 m-0 hidden">{labels.error}</p>
+      <p id="password-debug" class="text-[10px] text-black/25 dark:text-white/25 m-0 hidden break-all text-center"></p>
     </div>
   </div>
 
@@ -81,71 +82,6 @@ const labels = {
   var IV_LEN = 12;
   var TAG_LEN = 16;
 
-  var container = document.getElementById('encrypted-container');
-  if (!container) return;
-
-  var encryptedData = container.getAttribute('data-encrypted');
-  var slug = container.getAttribute('data-slug');
-  var cacheKey = 'pw:' + slug;
-
-  var ui = document.getElementById('password-ui');
-  var form = document.getElementById('password-form');
-  var input = document.getElementById('password-input');
-  var errorEl = document.getElementById('password-error');
-  var contentEl = document.getElementById('decrypted-content');
-
-  function showContent(html) {
-    contentEl.innerHTML = html;
-    contentEl.classList.remove('hidden');
-    ui.classList.add('hidden');
-    // Scripts injected via innerHTML are inert — re-create them so they execute
-    var scripts = contentEl.querySelectorAll('script');
-    for (var i = 0; i < scripts.length; i++) {
-      var old = scripts[i];
-      var ns = document.createElement('script');
-      for (var j = 0; j < old.attributes.length; j++) {
-        ns.setAttribute(old.attributes[j].name, old.attributes[j].value);
-      }
-      ns.textContent = old.textContent;
-      old.parentNode.replaceChild(ns, old);
-    }
-    // Re-init components after content is in DOM
-    setTimeout(function() {
-      document.dispatchEvent(new CustomEvent('password:decrypted'));
-    }, 100);
-
-    // 初始化解密内容中图片的 LQIP 淡入
-    var placeholders = contentEl.querySelectorAll('.lqip-placeholder');
-    for (var i = 0; i < placeholders.length; i++) {
-      (function(placeholder) {
-        var container = placeholder.parentElement;
-        if (!container) return;
-        var img = container.querySelector('img');
-        if (!img) return;
-        if (img.complete && img.naturalWidth > 0) {
-          img.style.opacity = '1';
-          placeholder.classList.add('loaded');
-        } else {
-          img.addEventListener('load', function() {
-            img.style.opacity = '1';
-            placeholder.classList.add('loaded');
-          }, { once: true });
-          img.addEventListener('error', function() {
-            placeholder.classList.add('loaded');
-          }, { once: true });
-        }
-      })(placeholders[i]);
-    }
-  }
-
-  function showError() {
-    errorEl.classList.remove('hidden');
-  }
-
-  function hideError() {
-    errorEl.classList.add('hidden');
-  }
-
   function base64ToBytes(b64) {
     var bin = atob(b64);
     var bytes = new Uint8Array(bin.length);
@@ -155,101 +91,228 @@ const labels = {
     return bytes;
   }
 
-  async function decrypt(pwd) {
-    var raw = base64ToBytes(encryptedData);
-    var salt = raw.slice(0, SALT_LEN);
-    var iv = raw.slice(SALT_LEN, SALT_LEN + IV_LEN);
-    var authTag = raw.slice(SALT_LEN + IV_LEN, SALT_LEN + IV_LEN + TAG_LEN);
-    var ciphertext = raw.slice(SALT_LEN + IV_LEN + TAG_LEN);
-
-    var combined = new Uint8Array(ciphertext.length + TAG_LEN);
-    combined.set(ciphertext);
-    combined.set(authTag, ciphertext.length);
-
-    var enc = new TextEncoder();
-    var keyMaterial = await crypto.subtle.importKey(
-      'raw', enc.encode(pwd), 'PBKDF2', false, ['deriveBits', 'deriveKey']
-    );
-    var key = await crypto.subtle.deriveKey(
-      { name: 'PBKDF2', salt: salt, iterations: ITERATIONS, hash: 'SHA-256' },
-      keyMaterial,
-      { name: 'AES-GCM', length: 256 },
-      false,
-      ['decrypt']
-    );
-    var decrypted = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: iv }, key, combined);
-    return new TextDecoder().decode(decrypted);
+  // 诊断辅助：把关键环境信息压缩成一行，解密失败时显示，便于定位
+  // 是「密码被输入法改形」还是「浏览器不支持 WebCrypto」
+  function envInfo() {
+    var hasSubtle = !!(window.crypto && window.crypto.subtle);
+    var secure = window.isSecureContext ? 1 : 0;
+    return 'subtle:' + (hasSubtle ? 1 : 0) + ' secure:' + secure;
   }
 
-  // 手机输入法常把数字打成全角（２６１５），或从聊天/文档复制时带入零宽字符、
-  // 空格、不换行空格。这些字符肉眼不可见，但会让 PBKDF2 派生出另一把密钥，
-  // 表现为「密码明明是对的却提示错误」。逐个变体尝试，任一通过即可。
-  function pwdVariants(pwd) {
-    var list = [];
-    function add(v) {
-      if (v && list.indexOf(v) < 0) list.push(v);
-    }
-    add(pwd);
-    // 去掉所有空白与零宽字符（\s 已含全角空格 U+3000）
-    var stripped = pwd.replace(/[\s\u200B-\u200D\uFEFF]+/g, '');
-    add(stripped);
-    // NFKC：全角数字/字母 → 半角，兼容字符归一
-    var bases = [pwd, stripped];
-    for (var i = 0; i < bases.length; i++) {
-      if (!bases[i]) continue;
-      try {
-        add(bases[i].normalize('NFKC'));
-      } catch (e) {
-        // 老内核不支持 normalize，忽略
+  function pwdDiag(raw) {
+    var first = raw && raw.length ? raw.codePointAt(0).toString(16) : 'none';
+    return 'len:' + (raw ? raw.length : 0) + ' cp0:0x' + first;
+  }
+
+  function init() {
+    var container = document.getElementById('encrypted-container');
+    if (!container) return;
+    // 幂等：整页加载与 Swup 切页可能各触发一次
+    if (container.getAttribute('data-pw-init') === '1') return;
+    container.setAttribute('data-pw-init', '1');
+
+    var encryptedData = container.getAttribute('data-encrypted');
+    var slug = container.getAttribute('data-slug');
+    var cacheKey = 'pw:' + slug;
+
+    var ui = document.getElementById('password-ui');
+    var form = document.getElementById('password-form');
+    var input = document.getElementById('password-input');
+    var errorEl = document.getElementById('password-error');
+    var debugEl = document.getElementById('password-debug');
+    var contentEl = document.getElementById('decrypted-content');
+    if (!ui || !form || !input || !contentEl) return;
+
+    function showContent(html) {
+      contentEl.innerHTML = html;
+      contentEl.classList.remove('hidden');
+      ui.classList.add('hidden');
+      // Scripts injected via innerHTML are inert — re-create them so they execute
+      var scripts = contentEl.querySelectorAll('script');
+      for (var i = 0; i < scripts.length; i++) {
+        var old = scripts[i];
+        var ns = document.createElement('script');
+        for (var j = 0; j < old.attributes.length; j++) {
+          ns.setAttribute(old.attributes[j].name, old.attributes[j].value);
+        }
+        ns.textContent = old.textContent;
+        old.parentNode.replaceChild(ns, old);
+      }
+      // Re-init components after content is in DOM
+      setTimeout(function() {
+        document.dispatchEvent(new CustomEvent('password:decrypted'));
+      }, 100);
+
+      // 初始化解密内容中图片的 LQIP 淡入
+      var placeholders = contentEl.querySelectorAll('.lqip-placeholder');
+      for (var k = 0; k < placeholders.length; k++) {
+        (function(placeholder) {
+          var box = placeholder.parentElement;
+          if (!box) return;
+          var img = box.querySelector('img');
+          if (!img) return;
+          if (img.complete && img.naturalWidth > 0) {
+            img.style.opacity = '1';
+            placeholder.classList.add('loaded');
+          } else {
+            img.addEventListener('load', function() {
+              img.style.opacity = '1';
+              placeholder.classList.add('loaded');
+            }, { once: true });
+            img.addEventListener('error', function() {
+              placeholder.classList.add('loaded');
+            }, { once: true });
+          }
+        })(placeholders[k]);
       }
     }
-    return list;
-  }
 
-  // 依次尝试各变体，任一解密成功即返回 { html, pwd }
-  function attempt(pwd) {
-    var variants = pwdVariants(pwd);
-    return new Promise(function (resolve, reject) {
-      (function next(i) {
-        if (i >= variants.length) {
-          reject(new Error('password mismatch'));
-          return;
+    function showError(code, info) {
+      if (errorEl) errorEl.classList.remove('hidden');
+      if (debugEl) {
+        debugEl.textContent = code + (info ? ' · ' + info : '');
+        debugEl.classList.remove('hidden');
+      }
+      try {
+        console.warn('[encrypted]', code, info || '', envInfo(), navigator.userAgent);
+      } catch (e) {}
+    }
+
+    function hideError() {
+      if (errorEl) errorEl.classList.add('hidden');
+      if (debugEl) debugEl.classList.add('hidden');
+    }
+
+    // 「密码错误」目前涵盖多种失败原因，先按大类拆开：
+    // no-webcrypto = 浏览器不支持/非 HTTPS，怎么输都不会对
+    function supportProblem() {
+      if (!window.crypto || !window.crypto.subtle) return 'no-webcrypto';
+      if (window.isSecureContext === false) return 'insecure-context';
+      return '';
+    }
+
+    async function decrypt(pwd) {
+      var raw = base64ToBytes(encryptedData);
+      var salt = raw.slice(0, SALT_LEN);
+      var iv = raw.slice(SALT_LEN, SALT_LEN + IV_LEN);
+      var authTag = raw.slice(SALT_LEN + IV_LEN, SALT_LEN + IV_LEN + TAG_LEN);
+      var ciphertext = raw.slice(SALT_LEN + IV_LEN + TAG_LEN);
+
+      var combined = new Uint8Array(ciphertext.length + TAG_LEN);
+      combined.set(ciphertext);
+      combined.set(authTag, ciphertext.length);
+
+      var enc = new TextEncoder();
+      var keyMaterial = await crypto.subtle.importKey(
+        'raw', enc.encode(pwd), 'PBKDF2', false, ['deriveBits', 'deriveKey']
+      );
+      var key = await crypto.subtle.deriveKey(
+        { name: 'PBKDF2', salt: salt, iterations: ITERATIONS, hash: 'SHA-256' },
+        keyMaterial,
+        { name: 'AES-GCM', length: 256 },
+        false,
+        ['decrypt']
+      );
+      var decrypted = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: iv }, key, combined);
+      return new TextDecoder().decode(decrypted);
+    }
+
+    // 手机输入法常把数字打成全角（２６１５），或从聊天/文档复制时带入零宽字符、
+    // 空格。这些字符肉眼不可见，但会让 PBKDF2 派生出另一把密钥，
+    // 表现为「密码明明是对的却提示错误」。逐个变体尝试，任一通过即可。
+    function pwdVariants(pwd) {
+      var list = [];
+      function add(v) {
+        if (v && list.indexOf(v) < 0) list.push(v);
+      }
+      add(pwd);
+      // 去掉所有空白与零宽字符（\s 已含全角空格 U+3000）
+      var stripped = pwd.replace(/[\s\u200B-\u200D\uFEFF]+/g, '');
+      add(stripped);
+      var bases = [pwd, stripped];
+      for (var i = 0; i < bases.length; i++) {
+        if (!bases[i]) continue;
+        try {
+          add(bases[i].normalize('NFKC'));
+        } catch (e) {
+          // 老内核不支持 normalize，忽略
         }
-        decrypt(variants[i])
-          .then(function (html) {
-            resolve({ html: html, pwd: variants[i] });
-          })
-          .catch(function () {
-            next(i + 1);
-          });
-      })(0);
+      }
+      return list;
+    }
+
+    // 依次尝试各变体，任一解密成功即返回 { html, pwd }
+    function attempt(pwd) {
+      var variants = pwdVariants(pwd);
+      return new Promise(function(resolve, reject) {
+        (function next(i) {
+          if (i >= variants.length) {
+            reject({ code: 'mismatch' });
+            return;
+          }
+          decrypt(variants[i])
+            .then(function(html) {
+              resolve({ html: html, pwd: variants[i] });
+            })
+            .catch(function() {
+              next(i + 1);
+            });
+        })(0);
+      });
+    }
+
+    function fail(err, raw) {
+      var code = (err && err.code) || 'decrypt-error';
+      showError(code, pwdDiag(raw) + ' ' + envInfo());
+    }
+
+    form.addEventListener('submit', function(e) {
+      e.preventDefault();
+      var raw = input.value;
+      var pwd = raw.trim();
+      if (!pwd) return;
+      hideError();
+
+      var problem = supportProblem();
+      if (problem) {
+        showError(problem, envInfo());
+        return;
+      }
+
+      attempt(pwd)
+        .then(function(res) {
+          // 缓存实际生效的规范形式，下次自动解锁不会再踩同样的坑
+          sessionStorage.setItem(cacheKey, res.pwd);
+          showContent(res.html);
+        })
+        .catch(function(err) {
+          fail(err, raw);
+        });
     });
+
+    var cached = sessionStorage.getItem(cacheKey);
+    if (cached && !supportProblem()) {
+      attempt(cached)
+        .then(function(res) {
+          sessionStorage.setItem(cacheKey, res.pwd);
+          showContent(res.html);
+        })
+        .catch(function() {
+          sessionStorage.removeItem(cacheKey);
+        });
+    }
   }
 
-  // Handle form submit
-  form.addEventListener('submit', function(e) {
-    e.preventDefault();
-    var pwd = input.value.trim();
-    if (!pwd) return;
-    hideError();
-    attempt(pwd).then(function(res) {
-      // 缓存实际生效的规范形式，下次自动解锁不会再踩同样的坑
-      sessionStorage.setItem(cacheKey, res.pwd);
-      showContent(res.html);
-    }).catch(function() {
-      showError();
-    });
-  });
-
-  // Try cached password
-  var cached = sessionStorage.getItem(cacheKey);
-  if (cached) {
-    attempt(cached).then(function(res) {
-      sessionStorage.setItem(cacheKey, res.pwd);
-      showContent(res.html);
-    }).catch(function() {
-      sessionStorage.removeItem(cacheKey);
-    });
+  // 整页加载 & Swup 站内切页都要初始化：
+  // 只跑一次 IIFE 的话，从站内导航进文章时表单没有 submit 监听，
+  // 会退化成浏览器原生提交（页面刷新），看起来就像解锁失败。
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
   }
+  document.addEventListener('astro:page-load', init);
+  document.addEventListener('swup:contentReplaced', init);
+  document.addEventListener('swup:page:view', init);
 })();
 </script>
