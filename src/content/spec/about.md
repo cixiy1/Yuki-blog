@@ -11,7 +11,7 @@
 </p>
 
 <p align="center">
-  <a href="/files/resume-yuki.pdf"><b>📄 下载 PDF 简历</b></a>　·　<a href="/files/resume-yuki.docx"><b>📝 下载 Word 简历</b></a>
+  <a href="/files/resume-yuki.pdf"><b>📄 下载 PDF 简历</b></a>　·　<a href="/files/resume-yuki.docx"><b>📝 下载 Word 简历</b></a>　·　<a href="/files/resume-yuki.md"><b>📋 下载 Markdown 简历</b></a>
 </p>
 
 ---
@@ -116,6 +116,7 @@
 
 - [📄 个人开发简历（PDF）](/files/resume-yuki.pdf)
 - [📝 个人开发简历（Word）](/files/resume-yuki.docx)
+- [📋 个人开发简历（Markdown）](/files/resume-yuki.md)
 
 ---
 
