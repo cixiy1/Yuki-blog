@@ -100,7 +100,7 @@ const labels = {
   }
 
   function pwdDiag(raw) {
-    var first = raw && raw.length ? raw.codePointAt(0).toString(16) : 'none';
+    var first = raw && raw.length ? raw.charCodeAt(0).toString(16) : 'none';
     return 'len:' + (raw ? raw.length : 0) + ' cp0:0x' + first;
   }
 
@@ -183,15 +183,43 @@ const labels = {
       if (debugEl) debugEl.classList.add('hidden');
     }
 
-    // 「密码错误」目前涵盖多种失败原因，先按大类拆开：
-    // no-webcrypto = 浏览器不支持/非 HTTPS，怎么输都不会对
-    function supportProblem() {
-      if (!window.crypto || !window.crypto.subtle) return 'no-webcrypto';
-      if (window.isSecureContext === false) return 'insecure-context';
-      return '';
+    // 能力检测：老内核（微信 X5 / 老 Android WebView）没有 WebCrypto，
+    // 这类设备上无论输什么密码都只会报错，所以降级到纯 JS 实现：
+    // public/assets/js/pw-fallback.js（noble-hashes + noble-ciphers，
+    // 算法与 WebCrypto 完全一致，构建时由 esbuild 打包）。
+    var useWebCrypto = !!(window.crypto && window.crypto.subtle);
+    var fallbackPromise = null;
+
+    function ensureFallback() {
+      if (window.__pwFallback) return Promise.resolve(window.__pwFallback);
+      if (fallbackPromise) return fallbackPromise;
+      fallbackPromise = new Promise(function(resolve, reject) {
+        var s = document.createElement('script');
+        s.src = '/assets/js/pw-fallback.js';
+        s.async = true;
+        s.onload = function() {
+          if (window.__pwFallback) resolve(window.__pwFallback);
+          else reject({ code: 'fallback-no-api' });
+        };
+        s.onerror = function() {
+          reject({ code: 'fallback-load-failed' });
+        };
+        document.head.appendChild(s);
+      });
+      return fallbackPromise;
     }
 
-    async function decrypt(pwd) {
+    function decryptViaFallback(pwd) {
+      return ensureFallback().then(function(fb) {
+        try {
+          return fb.decryptWithPassword(pwd, encryptedData);
+        } catch (e) {
+          throw { code: 'mismatch' };
+        }
+      });
+    }
+
+    async function decryptViaSubtle(pwd) {
       var raw = base64ToBytes(encryptedData);
       var salt = raw.slice(0, SALT_LEN);
       var iv = raw.slice(SALT_LEN, SALT_LEN + IV_LEN);
@@ -215,6 +243,20 @@ const labels = {
       );
       var decrypted = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: iv }, key, combined);
       return new TextDecoder().decode(decrypted);
+    }
+
+    // 统一入口：优先 WebCrypto，环境不支持时自动切纯 JS
+    function decryptAny(pwd) {
+      if (!useWebCrypto) return decryptViaFallback(pwd);
+      return decryptViaSubtle(pwd).catch(function(err) {
+        // OperationError = 认证失败，就是密码不对，换算法也没用
+        if (err && (err.name === 'OperationError' || err.name === 'InvalidAccessError')) {
+          throw { code: 'mismatch' };
+        }
+        // TypeError / 其他 = 该环境实际用不了 WebCrypto（旧 X5、非安全上下文）
+        useWebCrypto = false;
+        return decryptViaFallback(pwd);
+      });
     }
 
     // 手机输入法常把数字打成全角（２６１５），或从聊天/文档复制时带入零宽字符、
@@ -245,16 +287,19 @@ const labels = {
     function attempt(pwd) {
       var variants = pwdVariants(pwd);
       return new Promise(function(resolve, reject) {
+        var lastCode = 'mismatch';
         (function next(i) {
           if (i >= variants.length) {
-            reject({ code: 'mismatch' });
+            reject({ code: lastCode });
             return;
           }
-          decrypt(variants[i])
+          decryptAny(variants[i])
             .then(function(html) {
               resolve({ html: html, pwd: variants[i] });
             })
-            .catch(function() {
+            .catch(function(err) {
+              // 环境类错误（如兜底脚本加载失败）要透传，别被「密码错误」盖住
+              if (err && err.code && err.code !== 'mismatch') lastCode = err.code;
               next(i + 1);
             });
         })(0);
@@ -263,7 +308,29 @@ const labels = {
 
     function fail(err, raw) {
       var code = (err && err.code) || 'decrypt-error';
-      showError(code, pwdDiag(raw) + ' ' + envInfo());
+      showError(code, pwdDiag(raw) + ' ' + envInfo() + ' ' + (useWebCrypto ? 'engine:webcrypto' : 'engine:fallback'));
+    }
+
+    // sessionStorage 在无痕模式 / 部分 WebView 里会直接抛错，
+    // 不能让它把「解密成功」变成「报错」
+    function readCache() {
+      try {
+        return sessionStorage.getItem(cacheKey);
+      } catch (e) {
+        return null;
+      }
+    }
+
+    function writeCache(v) {
+      try {
+        sessionStorage.setItem(cacheKey, v);
+      } catch (e) {}
+    }
+
+    function dropCache() {
+      try {
+        sessionStorage.removeItem(cacheKey);
+      } catch (e) {}
     }
 
     form.addEventListener('submit', function(e) {
@@ -273,16 +340,10 @@ const labels = {
       if (!pwd) return;
       hideError();
 
-      var problem = supportProblem();
-      if (problem) {
-        showError(problem, envInfo());
-        return;
-      }
-
       attempt(pwd)
         .then(function(res) {
           // 缓存实际生效的规范形式，下次自动解锁不会再踩同样的坑
-          sessionStorage.setItem(cacheKey, res.pwd);
+          writeCache(res.pwd);
           showContent(res.html);
         })
         .catch(function(err) {
@@ -290,15 +351,15 @@ const labels = {
         });
     });
 
-    var cached = sessionStorage.getItem(cacheKey);
-    if (cached && !supportProblem()) {
+    var cached = readCache();
+    if (cached) {
       attempt(cached)
         .then(function(res) {
-          sessionStorage.setItem(cacheKey, res.pwd);
+          writeCache(res.pwd);
           showContent(res.html);
         })
         .catch(function() {
-          sessionStorage.removeItem(cacheKey);
+          dropCache();
         });
     }
   }
