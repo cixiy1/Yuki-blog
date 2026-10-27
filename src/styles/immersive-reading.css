@@ -96,6 +96,11 @@ body.immersive-reading #post-container {
 		padding-left: 0 !important;
 		padding-right: calc(var(--immersive-toc-width, 20rem) + 1rem) !important;
 	}
+	/* 目录打开时，正文卡片撑满目录右侧的可用区域，
+	   避免正文被 max-width 限制后在中间、左右都留白 */
+	body.immersive-reading.immersive-toc-open #post-container {
+		max-width: none !important;
+	}
 }
 
 /* 目录栏本体：全高不透明侧栏抽屉 */
