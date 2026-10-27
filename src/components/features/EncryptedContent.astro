@@ -333,20 +333,33 @@ const labels = {
       } catch (e) {}
     }
 
+    // 纯 JS 解密在低端手机上要跑 10 万次 PBKDF2（1-2 秒），
+    // 期间给按钮一个忙碌态，避免被当成没反应
+    var submitBtn = form.querySelector ? form.querySelector('button[type="submit"]') : null;
+
+    function setBusy(busy) {
+      if (!submitBtn) return;
+      submitBtn.disabled = busy;
+      submitBtn.style.opacity = busy ? '0.6' : '';
+    }
+
     form.addEventListener('submit', function(e) {
       e.preventDefault();
       var raw = input.value;
       var pwd = raw.trim();
       if (!pwd) return;
       hideError();
+      setBusy(true);
 
       attempt(pwd)
         .then(function(res) {
           // 缓存实际生效的规范形式，下次自动解锁不会再踩同样的坑
           writeCache(res.pwd);
           showContent(res.html);
+          setBusy(false);
         })
         .catch(function(err) {
+          setBusy(false);
           fail(err, raw);
         });
     });
