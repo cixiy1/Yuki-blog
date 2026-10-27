@@ -74,6 +74,14 @@ body.immersive-reading #main-grid {
 	padding: 0 !important;
 }
 
+/* 内容面板内层：沉浸态不要被 92vw / 居中限制，否则目录打开后
+   正文容器整体被居中偏移，目录与正文之间、正文右侧都会留白 */
+body.immersive-reading #content-panel-inner {
+	width: 100% !important;
+	max-width: none !important;
+	margin-inline: 0 !important;
+}
+
 /* 文章卡片：居中 + 限宽 */
 body.immersive-reading #post-container {
 	width: 100% !important;
@@ -90,11 +98,12 @@ body.immersive-reading #post-container {
 /* 桌面端：目录打开时给文章让位，关闭后释放空间 */
 @media (min-width: 1024px) {
 	body.immersive-reading.immersive-toc-open #main-grid {
-		padding-left: calc(var(--immersive-toc-width, 20rem) + 1rem) !important;
+		padding-left: var(--immersive-toc-width, 20rem) !important;
+		padding-right: 1rem !important;
 	}
 	body.immersive-reading.immersive-toc-right.immersive-toc-open #main-grid {
-		padding-left: 0 !important;
-		padding-right: calc(var(--immersive-toc-width, 20rem) + 1rem) !important;
+		padding-left: 1rem !important;
+		padding-right: var(--immersive-toc-width, 20rem) !important;
 	}
 	/* 目录打开时，正文卡片撑满目录右侧的可用区域，
 	   避免正文被 max-width 限制后在中间、左右都留白 */
