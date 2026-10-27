@@ -49,6 +49,9 @@ const labels = {
           type="password"
           placeholder={labels.placeholder}
           autocomplete="off"
+          autocapitalize="off"
+          autocorrect="off"
+          spellcheck="false"
           class="w-full px-3 py-2 rounded-lg text-sm bg-black/5 dark:bg-white/10
                  border border-black/8 dark:border-white/8
                  text-black/80 dark:text-white/80 placeholder-black/25 dark:placeholder-white/25
@@ -178,15 +181,61 @@ const labels = {
     return new TextDecoder().decode(decrypted);
   }
 
+  // 手机输入法常把数字打成全角（２６１５），或从聊天/文档复制时带入零宽字符、
+  // 空格、不换行空格。这些字符肉眼不可见，但会让 PBKDF2 派生出另一把密钥，
+  // 表现为「密码明明是对的却提示错误」。逐个变体尝试，任一通过即可。
+  function pwdVariants(pwd) {
+    var list = [];
+    function add(v) {
+      if (v && list.indexOf(v) < 0) list.push(v);
+    }
+    add(pwd);
+    // 去掉所有空白与零宽字符（\s 已含全角空格 U+3000）
+    var stripped = pwd.replace(/[\s\u200B-\u200D\uFEFF]+/g, '');
+    add(stripped);
+    // NFKC：全角数字/字母 → 半角，兼容字符归一
+    var bases = [pwd, stripped];
+    for (var i = 0; i < bases.length; i++) {
+      if (!bases[i]) continue;
+      try {
+        add(bases[i].normalize('NFKC'));
+      } catch (e) {
+        // 老内核不支持 normalize，忽略
+      }
+    }
+    return list;
+  }
+
+  // 依次尝试各变体，任一解密成功即返回 { html, pwd }
+  function attempt(pwd) {
+    var variants = pwdVariants(pwd);
+    return new Promise(function (resolve, reject) {
+      (function next(i) {
+        if (i >= variants.length) {
+          reject(new Error('password mismatch'));
+          return;
+        }
+        decrypt(variants[i])
+          .then(function (html) {
+            resolve({ html: html, pwd: variants[i] });
+          })
+          .catch(function () {
+            next(i + 1);
+          });
+      })(0);
+    });
+  }
+
   // Handle form submit
   form.addEventListener('submit', function(e) {
     e.preventDefault();
     var pwd = input.value.trim();
     if (!pwd) return;
     hideError();
-    decrypt(pwd).then(function(html) {
-      sessionStorage.setItem(cacheKey, pwd);
-      showContent(html);
+    attempt(pwd).then(function(res) {
+      // 缓存实际生效的规范形式，下次自动解锁不会再踩同样的坑
+      sessionStorage.setItem(cacheKey, res.pwd);
+      showContent(res.html);
     }).catch(function() {
       showError();
     });
@@ -195,8 +244,9 @@ const labels = {
   // Try cached password
   var cached = sessionStorage.getItem(cacheKey);
   if (cached) {
-    decrypt(cached).then(function(html) {
-      showContent(html);
+    attempt(cached).then(function(res) {
+      sessionStorage.setItem(cacheKey, res.pwd);
+      showContent(res.html);
     }).catch(function() {
       sessionStorage.removeItem(cacheKey);
     });
