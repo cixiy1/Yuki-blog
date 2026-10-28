@@ -1,7 +1,7 @@
 ---
 title: ChestSmartDiagnosis：从零训练的胸片多标签分类工程
 published: 2026-10-28
-description: 不用预训练权重的 DenseNet121 训练工程，加一层能跨机器派活的服务。写清每层吃什么、吐什么，以及怎么确认它没坏。
+description: 按代码实现写的技术规格。从整体拓扑往下钻到训练流水线、数据与模型、推理与提交，附配置、存储、安全和测试的约束。
 tags:
   - 深度学习
   - 医学影像
@@ -12,421 +12,559 @@ slug: chest-smart-diagnosis
 comment: true
 ---
 
-胸部 X 光，10 类多标签。一张图可以同时有几个征象，也可以一个都没有。数据按 study 组织，一个 study 底下可能挂着几张不同体位的图，提交却按 study 算。
+胸部 X 光，10 类多标签，主指标是 study 级 Macro-AUC。工程从空权重开始训，6.96M 参数全部自己初始化，没有加载预训练权重的入口。
 
-比赛只让用主办方给的数据。我把这条往前推了一步，预训练权重也不用。DenseNet121 从 `weights=None` 起，6.96M 参数全部自己初始化。
+下面按系统的层级往下走。先看整体由谁组成，再看请求怎么进来。之后是任务的排队、派发、执行和回收，训练子进程里从数据走到 checkpoint，最后落到一份提交文件。顺序按代码的实际形态排，不按目录排。
 
-没有预训练权重，能靠的就剩三样：初始化怎么写、正则怎么加、训得够不够久。下面讲这三样怎么落进代码，以及为了同时跑几十组实验，我在外面又套了什么。
+## 整体：谁在跑
 
-## 起点：三条约束
+```mermaid
+flowchart LR
+  Client["客户端<br/>CLI / 浏览器 / HTTP"]
+  Main["主服务<br/>队列 + 设备表"]
+  LocalCard["本机卡 0"]
+  NodeB["节点 B · serve"]
+  NodeB0["节点 B 卡 0"]
+  NodeC["节点 C · serve"]
+  NodeC0["节点 C 卡 0"]
 
-Macro-AUC 是主指标，每个类等权。稀有类正例可能只有个位数，掉一点就拖整体。损失得给稀有类加权，但要设上限；不设的话一个 batch 就能把训练带崩。
+  Client -->|"提交任务"| Main
+  Main -->|"起子进程"| LocalCard
+  Main -->|"转发任务"| NodeB
+  NodeB -->|"起子进程"| NodeB0
+  Main -->|"转发任务"| NodeC
+  NodeC -->|"起子进程"| NodeC0
+  NodeB -.->|"状态 / 日志 / 产物"| Main
+  NodeC -.->|"状态 / 日志 / 产物"| Main
+```
 
-提交按 study，每个 study 必须出满 10 行，缺一行就是格式错。所以训练看单张图，评测和推理按 study 合并，类别顺序从训练一路钉到提交。
+客户端只提交任务。主服务拿着队列和设备表，可以在本机起进程，也可以把整单任务转发给另一台跑着 `serve` 的机器。节点在自己的卡上起训练进程，状态、日志、产物沿反方向回到主服务。
 
-数据只用主办方给的那份，不并外部标注，不加载预训练权重。这条把「通用视觉特征」这条路堵死了，剩下能调的就是初始化、正则和 schedule。
+这里有三件事值得先说清。
 
-还有个容易忽略的点：Macro-AUC 只看排序。调阈值让 F1 好看，AUC 一点不动。工程里 `submission.threshold` 只影响写进文件的 Gate 列，不参与选模型。
+主服务不训练。它接收、排队、选卡、启动或转发、回收结果，自己不碰一个 batch。
 
-## 代码怎么切
+节点是完整的服务实例，有自己的队列、设备表和训练进程。它不做 GPU 透传。
 
-11 个包，13.5k 行 Python，外加 2.6k 行写在 HTML 里的前端。
+任务向外走，结果向内走。控制流和结果流方向相反，这一点决定了后面所有接口的设计。
 
-| 包 | 行数 | 职责 |
-| --- | --- | --- |
-| `config/` | 866 | 配置 schema、继承合并、设备解析 |
-| `data/` | 1543 | 标签表、数据集、study 合并、泄漏检查 |
-| `models/` | 779 | DenseNet121、初始化、DropPath |
-| `losses/` | 401 | 四种损失 |
-| `transforms/` | 263 | 增强与 TTA |
-| `train/` | 2334 | 训练循环、优化器、EMA、DDP、断点 |
-| `eval/` | 322 | 指标与评测入口 |
-| `infer/` | 749 | 推理、集成、概率合并 |
-| `submission/` | 337 | 写文件、查格式 |
-| `server/` | 4528 | 排队、分卡、HTTP、网页 |
-| `utils/` | 286 | 读图、随机种子 |
+系统管什么、不管什么也划得很清楚。内部负责任务的提交、排队、分卡和进程启动；负责数据解析、训练、验证、推理和提交生成；也负责 checkpoint、日志、summary 与产物管理。外部交给主办方的数据、评测平台，以及容器、GPU、网络。不做的部分包括在线诊断服务、患者管理、多租户账号、跨机器分布式训练。
+
+约束汇总：
+
+| 项 | 约束 |
+| --- | --- |
+| 训练数据 | 只用主办方提供的那份 |
+| 外部权重 | 没有加载入口，全部从零训练 |
+| 样本粒度 | 训练按图像，标签、评估、提交按 study |
+| 输出 | UTF-8 CSV，每个 study 出全部 10 类 |
+| 模型体积 | 压缩前不超过 500 MB |
+| 单图延迟 | 端到端不超过 100 ms |
+| 并行范围 | 单机任务级并行，或单机多卡 DDP |
+
+## 两个面
 
 ```mermaid
 flowchart TB
-  subgraph ENTRY["入口"]
-    CLI["命令行 18 个子命令"]
-    SMOKE["冒烟脚本 九步"]
-    WEB["网页控制台 单文件"]
+  subgraph Control["控制面"]
+    Submit["提交请求"]
+    Queue["任务队列"]
+    Device["设备注册表"]
+    Dispatch["调度决策"]
+    Reports["状态 / 日志 / 产物汇总"]
   end
-  subgraph SCHED["调度 · server/"]
-    API["HTTP 接口 标准库"]
-    WL["命令白名单"]
-    SLOT["分卡"]
-    STATE["任务状态"]
+  subgraph Compute["计算面"]
+    Process["训练或推理子进程"]
+    Data["数据读取与预处理"]
+    GPU["GPU 前向 / 反向"]
+    Output["checkpoint / submission / summary"]
   end
-  subgraph EXEC["执行"]
-    TRAIN["train/ 训练引擎"]
-    INFER["infer/ eval/ 推理评测"]
-    SUBM["submission/ 写文件"]
-  end
-  subgraph BASE["基础"]
-    DATA["data/"]
-    MODEL["models/"]
-    LOSS["losses/"]
-    TFM["transforms/"]
-    CFG["config/"]
-  end
-  WEB --> API
-  API --> WL
-  API --> SLOT
-  SLOT --> STATE
-  SLOT -->|"起子进程"| TRAIN
-  SLOT -->|"起子进程"| INFER
-  CLI --> TRAIN
-  CLI --> INFER
-  CLI --> SUBM
-  SMOKE --> TRAIN
-  TRAIN --> DATA
-  TRAIN --> MODEL
-  TRAIN --> LOSS
-  TRAIN --> TFM
-  TRAIN --> CFG
-  INFER --> DATA
-  INFER --> MODEL
-  SUBM --> CFG
+  Submit --> Queue --> Dispatch
+  Device --> Dispatch
+  Dispatch -->|"启动"| Process
+  Process --> Data --> GPU --> Output
+  Process -.->|"日志 / 退出码"| Reports
+  Output -.->|"摘要 / 产物"| Reports
 ```
 
-调用只朝一个方向走：入口调执行，执行调基础，反向一条都没有。
+控制面回答谁可以跑、现在哪张卡空着、任务到了哪一步。计算面回答这批数据怎么训、模型输出什么、产物写到哪。
 
-训练代码不知道自己被谁拉起来。同一个 `run_training`，命令行能直接调，调度器能当子进程拉，`torchrun` 能拉成 N 个进程。判据全在环境变量里，代码里没有开关。
+两个面用子进程边界隔开。调度器不 import 训练模型，也不在自己线程里执行训练。这条边界带来一个直接好处：主服务可以跑在一台没装 torch 的机器上，只负责派活。
 
-推理也不看训练配置。预处理参数、类别顺序、分辨率都从断点文件的 meta 里读。224 训出来的模型和 320 训出来的模型，能塞进同一个集成，各自按自己的尺寸处理。
+角色分工：
 
-调度层碰不到训练细节。`server/` 里没有一行 import `torch`，它只管拼命令、分卡、收产物。所以调度服务能跑在一台没装 torch 的机器上。
+| 角色 | 入口 | 职责 | 要数据吗 |
+| --- | --- | --- | --- |
+| 客户端 | `submit`、浏览器、curl | 提交、查状态、下产物 | 否 |
+| 主服务 | `serve` | 队列、设备表、派发、回收 | 本机任务要 |
+| 本地槽位 | 主服务拉起的子进程 | 在主服务机器上执行 | 是 |
+| 推送节点 | 节点上的 `serve` | 收整单任务并本地执行 | 是 |
+| 拉取 worker | `worker` | 主动注册、领任务、回传 | 是 |
 
-## 参数放哪
+多卡有两种，含义完全不同：
 
-配置是唯一的参数来源，代码里没有写死的数字。
+| 模式 | 调度单位 | 产物 | 用在哪 |
+| --- | --- | --- | --- |
+| 任务级并行 | 一个任务占一个槽位 | 多个独立 run | 多配方、多折、多模型集成 |
+| 单任务多卡 | 一个任务占同机 N 个槽位 | 一个 run、一份 `best.pt` | DDP 训同一个模型 |
 
-继承分三层。`base.yaml` 放公共默认值，`gear/*.yaml` 只管和机器有关的那几项，`train/*` 和 `infer/*` 是具体配方，用 `_base_` 指向上一层。合并是递归的，带环检测。相对路径按引用它的那个文件所在目录算。所有路径最后都锚到项目根，从哪个目录启动，产物都落同一处。
+任务级并行拉高实验吞吐，DDP 拉高单个任务的算力。远程节点不能把多台机器拼成一个 DDP 世界，跨机只能各跑各的，之后合并概率。
 
-命令行覆盖和 YAML 的严格度不一样，这是故意的。`--set train.epochz=30` 当场报错，还带拼写建议，因为人在敲命令，立刻纠正最省时间。YAML 里写错键只提醒一声，因为那份 YAML 可能是继承链上别人写的，直接失败会卡住一整条链。
+拉取 worker 是拓扑上的补充。前两种都要求主服务能连到训练机，遇到 NAT、校园网隔离、训练机没有入站端口就不成立。worker 反过来主动连主服务，自己不暴露端口。
 
-加载时一次把能查的都查了：类别数三处是否一致、通道数和第一层卷积是否对得上、`drop_path` 和 `label_smoothing` 是否越界、随机裁剪的上下界是否颠倒、DDP 要的卡数够不够。有问题的在开跑前就拒绝，不等 30 个 epoch 跑完才发现参数没生效。
-
-几个默认值是我特意定的：
-
-- 随机裁剪 scale 0.70~1.0，ratio 0.90~1.12。胸廓比例固定，不该像自然图像那样抖到 3:4；下界再往下压，会把要判别的结构本身裁掉。
-- 归一化用 `(0.5, 0.5, 0.5)`。不用别人的权重，就没理由沿用别人的统计量。
-- `drop_path`、`mixup_p`、`label_smoothing` 默认全关。这三个强度得按数据量调，`scratch_strong.yaml` 里才一起打开。
-- `train.resume: true`。断点续训是默认行为，所以换实验必须换 `run_name`，否则会接着旧断点往下跑，两次结果不可比。
-
-机器档位只差三项：
-
-| 档位 | workers | 混合精度 | 编译 | 用在哪 |
-| --- | --- | --- | --- | --- |
-| `mps_tiny` | 0 | 关 | 关 | 本机 Apple Silicon |
-| `cuda_full` | 8 | bf16 | 关 | 比赛的单卡 |
-| `cuda_ensemble` | 8 | bf16 | 开 | 集成阶段 |
-
-MPS 的限制是硬的：不能多进程取数，没有混合精度，不能编译。这些不在每个配方里重写一遍，统一在 `config/devices.py` 里按设备类型钳住。换机器改一行就够。
-
-## 数据这一层
+## 主服务内部
 
 ```mermaid
-flowchart LR
-  CSV["train.csv / valid.csv"] --> NORM["认列名<br/>几种写法都试"]
-  NORM --> MAP["认类别号<br/>从 1 开始"]
-  MAP --> UNION["按 study 合并标签"]
-  UNION --> DS["数据集<br/>一张图一条"]
-  DS --> TF["增强"]
-  TF --> COLLATE["拼成 batch"]
-  COLLATE --> BATCH["图 + 标签 + study 号"]
+flowchart TB
+  Client["客户端 / 浏览器"]
+  HTTP["ThreadingHTTPServer<br/>api.py"]
+  Commands["命令注册与参数白名单<br/>commands.py"]
+  Scheduler["Scheduler<br/>scheduler.py"]
+  Jobs["JobStore<br/>jobs.py"]
+  Devices["DeviceRegistry<br/>devices.py"]
+  Local["本地子进程"]
+  Remote["远程 serve"]
+  Pull["pull worker"]
+  Files["jobs/ 与 runs/ 文件存储"]
+
+  Client --> HTTP
+  HTTP --> Commands
+  HTTP --> Scheduler
+  Scheduler --> Jobs
+  Scheduler --> Devices
+  Scheduler --> Local
+  Scheduler --> Remote
+  Scheduler --> Pull
+  Jobs --> Files
+  Devices --> Files
+  Local --> Files
 ```
 
-列号按类别号定位，不重新编号。一批数据只出现 5 个类时，内部压成 5 列，训练和提交的列序就分叉了。所以训练定死顺序，验证和推理必须显式传 `class_ids`，不靠猜。
+HTTP 层用标准库的 `ThreadingHTTPServer`，没引 FastAPI 也没引 Flask。它只管路由、JSON 编解码、token 鉴权、静态页面、请求体读取、异常转 400/404/500、文件下载和远程结果代理。业务逻辑不放在 handler 里，handler 只调 Scheduler、JobStore 和 DeviceRegistry。
 
-类别号写成 1 起始。官方是 1..10。自动推断在数值重合时会出歧义，不值得赌。
+客户端提交的 argv 不能随便拼。每个可提交的命令先登记，字段是 `name`、`group`、`config_kind`、`params`、`injects_run_name`、`artifacts`、`multi_gpu`。参数也要登记成 `Param`，字段是 `name`、`flag`、`kind`、`choices`、`path`。
 
-标签按 study 合并。一个 study 几张图，任一张报了这个征象，整个 study 就算有。训练用单图标签，评测和推理用 study 标签。
+校验规则七条：未登记的命令拒绝，未登记的参数字拒绝，参数不能以 `-` 开头，路径必须是项目内相对路径，路径不能含 `..`，整数小数枚举按声明校验，文本不能含换行。这套规则挡的是最坏情况：一个能从浏览器提交任意命令的服务，等于把机器交出去。
 
-合并有三种算法，差别只在哪一步取平均。`mean` 直接平均概率，默认用它，图质量差不多时最稳。`logit_mean` 先转 logit 再平均，概率贴着 0 或 1 时能躲开单张极端图的拉扯。`max` 取最大，只在「任一张有就算有」的语义下成立，结果会系统性偏高。
+Scheduler 的输入是 queued 任务、设备注册表、每槽位当前占用、远程节点和 worker 的活跃状态。输出是本地子进程、远程 `POST /jobs`、待领取的 pull 任务、以及任务状态更新。
 
-study 清单是准的。合并结果严格等于传进去的清单。清单外多出来的预测忽略并提醒，清单里没有图的 study 填先验值。少了这条，提交缺行要等上传完才发现。
+它不维护独立占用计数器。每次 tick 都从 running 任务重算占用，避免内存计数和落盘状态漂移。漂移的表现是两张卡被派了三个任务，症状是莫名 OOM。
 
-患者泄漏要先查。训练集和验证集按患者分，同一个人的图不能两边都有。官方切分如果在患者级别不干净，本地分数会虚高，早停会停在错的位置，而这个错在提交前看不出来。K 折同理，按患者分，不按 study 分。
+JobStore 一任务一目录：
 
-## 模型
+```text
+jobs/
+  <job_id>/
+    job.json
+    train.log
+    files/          # pull worker 回传的产物
+```
 
-骨干是 torchvision 的 DenseNet121，改了三处。
+用文件不用数据库，理由有五条。任务规模只有几十到几百；状态变更不需要复杂事务；`job.json` 和日志能直接看；重启后能直接恢复；不用多运维一个数据库。
 
-第一层卷积从 3 通道改成 1 通道，灰度图直接进。没有预训练权重，就没必要复制成 3 通道去凑别人的输入格式，`repeat3` 只留作对照。
+`job.json` 写到临时文件再 `os.replace()`，避免读到写了一半的 JSON。记录里放命令、配置、覆盖项、参数、run_name、优先级、备注、状态、pid、退出码、设备与远程回执、metrics、warnings、error、三个时间戳。
 
-池化从固定 7×7 换成自适应到 1×1，224、320、448 同一份代码都能跑。
+DeviceRegistry 落在 `jobs/devices.json`，支持三类槽位：
 
-分类头从 1000 类改成 10 类，`head_hidden=0` 时就是一层线性。
-
-输出是 10 个 logits，不接 sigmoid。sigmoid 在损失和推理里各做一次，模型只负责吐原始分数。
-
-实测 6.96M 参数，fp32 26.5 MB，离 500MB 上限很远。本机 CPU 单张前向，224 输入 30.9 ms，320 输入 49.0 ms。CPU 的数字不能当 T4 的延迟，不过这个规模不太可能卡在速度上。
-
-### 初始化
-
-从零训练时，初始化是唯一能免费塞进先验的地方。
-
-卷积和线性层用 Kaiming 正态，按 fan_out 算。每个卷积后面都跟 BN。这个版本比 PyTorch 默认的 `kaiming_uniform(a=√5)` 更合适。BN 的权重设 1、偏置设 0。
-
-分类头权重设 0，偏置设成 `log(p/(1-p))`，p 是这个类在训练集里出现的比例，再夹到 ±6.0。两件事合起来，训练第 0 步模型输出就是「按类别比例猜」。不花钱，但省掉开局把偏置推到位的几十步梯度。
-
-夹到 ±6.0 是为了极端不平衡。某类频率如果是万分之一，`log(p/(1-p))` 会到 -9.2，配上零权重，这部分梯度会长期卡在很小的值里。
-
-### 随机深度
-
-速率按层深线性铺开，第一层不丢，最后一层丢到设定值。
-
-实现上把它挂成 `_DenseLayer` 的子模块。只留 hook 闭包不行：`.eval()` 传不到它，推理时还在随机丢分支。同一张图两次预测不一样，而且不报错。挂成子模块之后，断点里的键名不变，开关它不会让旧断点失效。
-
-### 损失
-
-四种，同一个接口，共用标签平滑。
-
-| 类型 | 做法 | 参数 |
+| 类型 | 示例 | 说明 |
 | --- | --- | --- |
-| `bce` | 标准二元交叉熵 | 无 |
-| `bce_posw` | 交叉熵乘逐类正样本权重 | 权重为负/正，夹在 `[1e-3, 20]` |
-| `focal` | 难样本加权 | γ = 2.0 |
-| `asl` | 正负样本不同 γ，负样本概率先平移 | γ_pos=0、γ_neg=4、clip=0.05 |
+| local | `0`、`1`、`cpu`、`mps` | 主服务本机设备 |
+| remote | `node-b:0` | 远程节点上的代理槽位 |
+| pull | `laptop-a` | 一台主动拉任务的 worker |
 
-标签平滑把目标从 1 改成 1-ε/2。官方标签来自报告里的「正面提及」，漏标比误标常见，软一点更贴合这种噪声。
+字段有 id、kind、label、enabled、capacity、note、url、token、remote_device、last_seen 和最近一次 probe 结果。运行期可以增删、停用、探测，不用重启服务。
 
-正样本权重必须设上限。稀有类的正例可能只有个位数，负/正会到几百，不夹住的话一个 batch 就能把训练带崩。
+客户端协议只有 HTTP 加 JSON。`--set` 的值原样转发，客户端不做类型推断，真正的转换发生在训练侧的 `parse_overrides()`。`--param` 是命令参数，和配置覆盖是两回事。下载产物时按服务端返回的相对名建父目录。
 
-ASL 和正样本权重同时开，正类等于被加权两次。所以 `scratch_strong.yaml` 把上限从 20 降到 10。真出现稀有类变差，第一步是把正样本权重整个关掉，用纯 ASL。
+## 任务的一生
 
-另有一层 `loss.class_weights`，按类别号给每类一个乘数。内部归一化到均值 1，免得整体 loss 尺度跟着变。这层是给「某几类一直上不去」精修用的，不当常规手段。
+```mermaid
+stateDiagram-v2
+  [*] --> queued
+  queued --> running: 分到槽位并启动或转发
+  queued --> cancelled: 排队中取消
+  running --> succeeded: exit=0
+  running --> failed: exit 非 0
+  running --> cancelled: 用户取消
+  running --> lost: 进程或节点失联
+```
 
-### 增强
+六个状态的含义。`queued` 是已落盘、等同机槽位。`running` 是本地进程存在，或远程与 pull 节点已接收。`succeeded` 是正常退出，训练任务还要结合 `summary.json` 读。`failed` 是非零退出或启动失败。`cancelled` 是用户取消且已到终态。`lost` 是状态未知，不代表训练逻辑失败。
 
-只用 `torchvision.transforms.v2`，不引 albumentations。少一个依赖，离线环境少一类问题。
+提交按固定顺序走：
 
-顺序固定：转单通道，随机裁剪并缩放到目标尺寸，水平翻转 0.5，旋转 ±10°，平移 0.05，亮度对比度抖动各 0.2，转 float，随机擦除 0.1，归一化。
+1. 解析 command、config、overrides、params。
+2. 查命令白名单。
+3. 查参数是否合法。
+4. 查配置路径是否在项目内。
+5. 查 `--set` 的键是否存在。
+6. 生成 job_id，检查 run_name 冲突。
+7. 写 `job.json` 为 queued。
+8. 调一次 `scheduler.tick()`，能派就进 running。
 
-不做色相饱和度，灰度图没有意义。
+任何一步不过，回 400 并说清卡在哪。
 
-MixUp 和 CutMix 是整批一起做，在拼好 batch 之后、前向之前，不在这条链里。
+run_name 冲突时会自动加 `_r2`、`_r3`。检查三处：有没有和活跃任务同名，有没有和历史任务同名，对应的 run 目录是否已经存在。三个理由。两个进程不能同时写同一个 `best.pt`；`train.resume=true` 会从旧 `last.pt` 接着训；如果旧 run 已经跑满 epoch，新任务可能一个 batch 都不跑就正常退出。
 
-MixUp 在多标签下的做法是同一个 λ 混图，也同一个 λ 混标签。λ 从 `Beta(0.4, 0.4)` 采。别照抄论文的 0.2，`Beta(0.2,0.2)` 是 U 形，实测 λ 掉到 0.006，等于整批换成另一个样本，学不到插值。0.4~1.0 才合适。CutMix 的 λ 按实际贴上去的面积重算，不拿采样值直接当面积比。
+槽位选择每个 tick 都重算：
 
-## 一次训练
+```mermaid
+flowchart TD
+  Tick["scheduler.tick"] --> Reap["回收已退出的本地进程"]
+  Reap --> PollRemote["轮询远程任务"]
+  PollRemote --> PollPull["处理 pull worker 状态"]
+  PollPull --> Count["按 running 任务算每槽位占用"]
+  Count --> Group["按同机分组可用槽位"]
+  Group --> Sort["queued 按优先级和提交时间排序"]
+  Sort --> Fit{"有同机容量够的任务吗"}
+  Fit -->|"有"| Dispatch["本地启动 / 远程转发 / pull 派发"]
+  Fit -->|"没有"| Wait["保持 queued"]
+  Dispatch --> Tick
+```
 
-一步的顺序是这样的：取一批，按概率决定做不做 MixUp 或 CutMix，前向（bf16），出 10 个 logits，算损失，反传（按累积步数），梯度裁剪 1.0，更新权重，更新学习率，更新 EMA。
+排序键是 `(-priority, created_at)`，同优先级先到先跑。本机槽位优先于远程，少一层网络故障面。
 
-优化器用 AdamW，参数最多分 4 组：分类头和主干，各自再分衰减与不衰减。判定很简单，维度 ≤1 或者名字以 `.bias` 结尾就不衰减。
+本地派发走 `Popen(shell=False, start_new_session=True)`，环境里注入 `CUDA_VISIBLE_DEVICES`。训练代码统一写 `device="cuda"`，让 PyTorch 只看得到分到的卡，某处漏传 `cuda:N` 也不会把两个任务挤到同一张卡。
 
-原因很直接。AdamW 的衰减是解耦的，对 BN 的尺度参数做衰减，等于把它往 0 拽，归一化层的表达能力就被削掉了。这是从零训练里少有的纯赚改动。
+远程派发有四条硬约束。两端同一份代码与配置；所需数据在远程本地；主服务只发相对项目根的配置路径；远程 token 目前明文存在主服务的 `devices.json` 里。
 
-学习率先线性升温两个 epoch，再按余弦降到接近 0，按 step 算不按 epoch 算。早期 BN 的统计量还没稳，一上来用 3e-4 容易落进坏解。
+pull 的时序分三段。worker 先 `join`，拿到 device_id 和轮询间隔。之后循环 `poll`，收任务或取消标记。执行中 `log` 补日志，结束 `artifact` 传产物、`finish` 报终态。超过 30 秒没心跳就不再派新任务，超过 120 秒把运行中的任务标成 `lost`。
 
-EMA 对所有权重和 BN 的统计量做滑动平均，decay 0.9998，前 100 次更新慢慢升到目标值。排序指标对权重抖动敏感，EMA 一般比最后一个 epoch 更稳。它单独存成 `best_ema.pt`，不覆盖 `best.pt`。
+`gpus=N` 的任务占同主机分组里 N 个槽位，四个槽位同时计为 busy。凑不齐就整单排队，不拆到两台机器。`gpus=0` 表示把当前可用的同机槽位全给它。
 
-早停盯 `macro_auc`，耐心 8 个 epoch，权重留前 2 名，剩下的快照在训练结束时删掉。
+取消分三种。本地排队任务直接改 cancelled；本地运行任务终止进程组，POSIX 上先 SIGTERM，等不到再 SIGKILL；远程任务由主服务向节点发取消请求，状态由节点回传；pull 任务只在主服务上置 `cancel_requested`，worker 下次 poll 取走再杀本机进程。
 
-多卡有几条硬规定，少一条就出问题。子进程按 `torchrun` 的环境变量起，不用 `spawn`。CUDA 用 nccl，其余用 gloo。每个 epoch 手动推进 sampler，否则每次划分都一样。各卡分别推理，汇总后统一算指标。只有 0 号进程写断点和日志。冻结主干时开 `find_unused_parameters`，否则 DDP 会抱怨有参数没参与反传。各卡种子错开，否则每张卡的增强完全一样，等于没做增强。MPS 直接拒绝，多卡自测用 CPU 加 gloo。
+进程退出后读 `summary.json` 回填指标。产物有两份白名单：
 
-多卡任务只能放在同一台机器上，梯度同步靠本机 NCCL，跨机器不成立。所以调度器把「一台机器」当分配单位，凑不齐就整单排队。
+```text
+训练  summary.json  history.csv  config.yaml  train.log
+      best.pt  best_ema.pt  ema.pt  kfold_summary.json
+推理  submissions/*.csv  *_study_probs.npy  *_studies.txt
+```
 
-## 断点文件
+下载接口对两份白名单和路径穿越都做检查，主服务不读任意路径。
 
-格式标识 `csd-checkpoint-v1`，内容就是一个字典。`meta` 放模型配置、预处理配置、类别号、类别名、元数据词表、合并算法；`model` 放裸 `state_dict`；再加 `epoch`、`metrics`、`ema_applied`；续训时才写 `optimizer`、`scheduler`、`ema`。
+## 训练流水线
 
-只存 state_dict，不 pickle 整个模型。本机 torch 比比赛容器新，pickle 过去的对象在容器里加载不了，state_dict 不会。加载时缺键只提醒，不直接崩。
+```mermaid
+flowchart TD
+  A["_main_.py"] --> B["cli.main"]
+  B --> C["load_config + --set"]
+  D["train/val CSV"] --> E["labels.py"]
+  C --> E
+  E --> F["train 固定 class_ids 顺序"]
+  F --> G["Dataset"]
+  G --> H["DataLoader"]
+  H --> I["build_model"]
+  I --> J["head prior 初始化"]
+  J --> K["criterion / optimizer / scheduler"]
+  K --> L["Trainer.fit"]
+  L --> M["history.csv"]
+  L --> N["best.pt / last.pt"]
+  L --> O["summary.json"]
+  L --> P["best_ema.pt / ema.pt"]
+```
 
-meta 里的预处理配置是推理的唯一依据。这样 224 和 320 的模型能混着集成。少这一层，就得靠「记得当时用的哪个配置」，而人一定会记错。
+配置继承的优先级是：父配置低于 `_gear_`，`_gear_` 低于当前 YAML，当前 YAML 低于 `--set`。相对路径统一锚到项目根，从任何工作目录启动都指向同一份数据和产物。
 
-存之前还要把包装剥掉。DDP 包一层、编译再包一层，直接存出来的键名会带 `module._orig_mod.` 前缀。换台机器就读不出来。
+单折训练的步骤是固定的：
 
-## 出提交
+1. 设种子，解析实际设备。
+2. 建 `runs/<run_name>/`，把最终配置存成 `config.yaml`。
+3. 读 train 标签表，用 train 的 class id 顺序读 val 标签表。
+4. 在 train 上拟合元数据词表。
+5. 建 Dataset 和 DataLoader。
+6. 算每类正例数和 pos_weight。
+7. 建模型并做从零初始化。
+8. 设 head bias 与 head weight。
+9. 建 AdamW 和 warmup 加 cosine 的 scheduler。
+10. 可选恢复 `last.pt`。
+11. 跑 epoch。
+12. 保存 best、last、EMA、history 和 summary。
+
+一个 epoch 里依次做：
+
+- `model.train`，施加主干冻结。
+- 推进 `DistributedSampler.set_epoch`，取 batch。
+- 按概率决定做不做 MixUp 或 CutMix。
+- autocast 前向，算损失。
+- 反向并累积梯度，裁剪，`optimizer.step`，`scheduler.step`。
+- `EMA.update`。
+- 切 `model.eval` 验证，跨 rank gather，聚合到 study 级，算 Macro-AUC 和 F1。
+
+K 折把官方 train 和 val 合并，按 `Subject_id` 做 GroupKFold，每折一套 `best.pt`，最后汇总成 `kfold_summary.json`。目录是 `runs/<run_name>_kfold/fold0..4/`。每折强制 `resume=false`，避免从折目录里的旧权重续训。
+
+checkpoint 的逻辑结构：
+
+```text
+{
+  "meta": {
+    "format": "csd-checkpoint-v1",
+    "model": {...},
+    "transform": {...},
+    "num_classes": 10,
+    "input_mode": "conv1",
+    "class_ids": [1..10],
+    "class_names": {...},
+    "metadata_vocab": {...},
+    "study_agg": "mean",
+    "fold": int|null,
+    "seed": int
+  },
+  "epoch": int,
+  "metrics": {...},
+  "ema_applied": bool,
+  "model": state_dict,
+  "optimizer": optional,
+  "scheduler": optional,
+  "ema": optional
+}
+```
+
+三条设计目标：不 pickle 整个模型对象；推理只依赖项目代码和 state_dict；meta 足以重建模型结构、输入模式、类别顺序和元数据词表。
+
+现状有一条要说清：`load_checkpoint()` 还在用 `weights_only=False`。测试验证过 payload 可以用 `weights_only=True` 读，生产加载没切过去。
+
+EMA 对浮点 state_dict 做滑动平均，包括 BatchNorm 的 running stats。公式是 `shadow = decay * shadow + (1-decay) * current`，前 100 次更新用更保守的动态 decay。训练结束后，EMA 指标比普通 best 好就写 `best_ema.pt`；无论是否胜出，都写 `ema.pt` 供集成用。推理默认优先 `best_ema.pt`，回退 `best.pt`。
+
+续训从 `last.pt` 恢复模型权重、optimizer、scheduler 和下一个 epoch 编号。checkpoint 的 epoch 已经达到目标时，训练循环不执行任何 batch 但进程正常退出，靠 `summary.json` 的 `epochs_ran=0` 识别空转。当前续训没有恢复 EMA 的历史状态。
+
+DDP 先由父进程读同一份配置，`plan()` 决定 nprocs。等于 1 就当前进程直接训。大于 1 就起 N 个子进程，各自 `init_process_group`，包 `DistributedDataParallel`。各 rank 训不同 batch，梯度 all-reduce，rank0 写文件。
+
+规则有六条：所有 rank 的模型初始化必须一致；构建模型之后再给 rank>0 错开种子；`DistributedSampler` 每 epoch 调 `set_epoch()`；验证概率用 `all_gather_object` 跨 rank 汇总；checkpoint 和 EMA 都针对裸模型，不带 `module.` 前缀；只有 rank0 写文件。
+
+## 数据与模型
+
+数据粒度转换是这条链：
+
+```text
+CSV 一行一图
+  -> 按 Study_id 聚合标签并集
+  -> study 级标签矩阵
+  -> 标签复制回每张图
+  -> Dataset 一行一图
+  -> 验证和推理再聚合回 study
+```
+
+CSV 和 ID 有几条硬规则。所有表以 `dtype=str` 读，`Study_id` 的零填充不能丢。class id 固定 1 起始、范围 1 到 10，val 和 test 必须复用 train 的顺序。缺类别时不能压缩列号。
+
+标签支持 `1;3;7`、`1,3,7`、`1|3|7` 三种分隔，也支持一行一个类别，按 study 分组后取并集，最终是 `(num_studies, 10)` 的 float32 矩阵。
+
+图像路径按顺序找：先看 `cache_dir` 下的直接路径，补扩展名，再看 `image_dir` 下的直接路径，补扩展名，最后按文件名递归搜索。都找不到就抛明确的 `FileNotFoundError`，不返回空图。图像统一转成 8 位灰度 PIL 图。缓存模式把短边缩到 512 左右存 PNG，训练时再从缓存图裁到目标分辨率。
+
+泄漏检查比两个集合：train 和 val 的 `Study_id` 有没有重叠，`Subject_id` 有没有重叠。同一患者跨 split 会让验证分数虚高，K 折必须按 `Subject_id` 分组。
+
+训练变换的顺序：
+
+1. Grayscale
+2. RandomResizedCrop
+3. RandomHorizontalFlip
+4. RandomRotation
+5. RandomAffine 平移
+6. ColorJitter
+7. ToDtype
+8. RandomErasing
+9. 可选的 RepeatChannels
+10. Normalize
+
+默认 `conv1` 走单通道，归一化 `(0.5, 0.5)`，把 `[0,1]` 映射到 `[-1,1]`。`repeat3` 只作对照。
+
+验证和 TTA 走 Resize 短边、CenterCrop，再按分支做 identity、hflip、scale 或 rotate，最后归一化。TTA 必须确定性，多个分支先在概率空间平均。
+
+MixUp 和 CutMix 在 Trainer 里做，抽到就混合图像和标签，CutMix 用矩形粘贴并按面积重算 lambda。多标签的正负元素用同一个 lambda。开了元数据就跳过混合，因为类别字段没法按 lambda 插值。
 
 ```mermaid
 flowchart LR
-  CK["断点"] --> TTA["几套 TTA<br/>原图 / 翻转 / 多尺度"]
-  TTA --> P1["单个模型内平均"]
-  P1 --> P2["跨模型平均<br/>可加权"]
-  P2 --> AGG["按 study 合并"]
-  AGG --> CSV["submission.csv"]
-  AGG --> NPY["概率 .npy + 清单 .txt"]
-  CSV --> VAL["查格式"]
+  X["Input<br/>1 x H x W"] --> Stem["conv0<br/>1 -> 64"]
+  Stem --> Dense["DenseNet121 features"]
+  Dense --> Pool["AdaptiveAvgPool"]
+  Pool --> Feat["1024"]
+  Meta["metadata one-hot"] --> MLP["MetaMLP<br/>D -> 32"]
+  Feat --> Concat["concat"]
+  MLP --> Concat
+  Concat --> Head["Linear<br/>1032 或 1024 -> 10"]
+  Head --> Logits["logits B x 10"]
 ```
 
-平均在概率上做，不在权重上做。权重平均要求几个模型落在同一条损失曲面上。从零训练的不同配方不满足这个条件，平均出来常常比任何一个都差，所以不做。
+模型默认 6.96M 参数，fp32 约 26.6 MB。输出永远是 logits，不接 sigmoid。
 
-三类产物一起写。csv 是提交物，npy 和 txt 是 study 级概率和清单。后者是为了「一张卡一个折」的跑法：那时没有进程同时拿着 N 个模型，为了集成再跑一遍推理纯属浪费。有了概率落盘，`scripts/merge_study_probs.py` 就能在 CPU 上按 study 名对齐求平均。几秒完成，结果可复现。
+初始化按四步走：卷积用 Kaiming 正态、fan_out；BN 的 gamma 设 1、beta 设 0；线性层用 Xavier；head bias 设 `log(p/(1-p))`，head weight 设 0。结果是初始分类头变成按类别先验猜的常数预测器，第一步主干没有梯度，第二步恢复。
 
-每份概率必须覆盖同一批 study。少一个就是提交缺行，脚本直接报错，不取交集，因为取交集等于悄悄丢数据。
+DropPath 训练时按样本生成 mask，`output = output / keep * mask`，推理时原样输出。mask 按样本生成，效果接近随机深度；逐元素丢弃那种是 Dropout，两者不一样。默认按密集层层深线性增大丢弃率，实现不改变 state_dict 键名。
+
+损失四种：
+
+| 损失 | 特点 |
+| --- | --- |
+| `bce` | 最稳定的基线 |
+| `bce_posw` | 默认，按每类正负比加权，cap 20 |
+| `focal` | 压低简单样本 |
+| `asl` | 正负不同 gamma，并平移负样本概率 |
+
+标签平滑是 `y' = y * (1 - epsilon) + epsilon / 2`，pos_weight 是负样本数除以正样本数，带最大截断。
+
+优化器把参数按 head、backbone 和 decay、no_decay 切成最多四组。1 维参数和所有 bias 默认不吃 weight decay，包括 BatchNorm 的 scale 和 shift。衰减是解耦的，对 BN 的尺度参数做衰减等于把它往 0 拽。
+
+## 评估、推理、提交
+
+图像到 study 有三种聚合。`mean` 是概率算术平均；`logit_mean` 先平均 logit 再 sigmoid；`max` 逐类取最大。
+
+study 清单是权威顺序。输出严格等于清单，清单外的 study 告警并忽略，清单内没有图的 study 先填 0.5，推理时可以用训练集先验覆盖。
+
+Macro-AUC 逐类算 ROC-AUC。某类只有一种标签时返回 NaN，只对有效类取平均，同时记录 `skipped_classes`。Macro-F1 用阈值二值化，是辅助指标，不参与主排序。
+
+```mermaid
+flowchart TD
+  Ckpt["1 到 N 个 checkpoint"] --> Meta["读 checkpoint meta"]
+  Meta --> Model["重建模型"]
+  Test["test.csv + images"] --> Dataset["测试 Dataset"]
+  Dataset --> TTA["逐套 TTA 推理"]
+  Model --> TTA
+  TTA --> AvgTTA["模型内 TTA 概率平均"]
+  AvgTTA --> AvgModel["跨模型概率平均"]
+  AvgModel --> Aggregate["按 test study 清单聚合"]
+  Aggregate --> Prior["无图 study 先验补齐"]
+  Prior --> CSV["submission.csv"]
+  CSV --> Extra["study_probs.npy + studies.txt"]
+  Extra --> Validate["提交校验"]
+```
+
+验证和提交共用同一条 predictor 路径，本地指标和线上提交不会分叉。
 
 提交固定五列：
 
-| 列 | 是什么 | 要求 |
+| 字段 | 约束 |
+| --- | --- |
+| `Subject_id` | 必填字符串 |
+| `Study_id` | 必填字符串，保留零填充 |
+| `Predict_class` | 合法 class id，每个 study 出满 10 行 |
+| `Probability` | `[0,1]` |
+| `Gate` | 空或 `[0,1]`，空表示官方默认阈值 0.5 |
+
+写出有四道保护。轻微越界的概率裁到 `[0,1]`；越界幅度超过 1.0 判为 logits 误传；临时文件写完原子替换；同一 study 只能对应一个 subject。
+
+集成在概率层做。N 个模型各自带 TTA 出概率矩阵，等权或加权平均，再按 study 聚合。离线也有合并路径：`<stem>_study_probs.npy` 配 `<stem>_studies.txt`，按 study 名称对齐，不假设行号顺序。
+
+## 横切：配置、存储、安全、部署
+
+配置由 dataclass 定义，YAML 只提供值。`--set` 的未知键立即报错，YAML 的未知键告警后忽略。加载完做类型和语义校验，再把相对路径锚到项目根，同时把生效配置存成 `config.yaml` 留痕。
+
+存储布局：
+
+```text
+项目根/
+  runs/<run_name>/     best.pt, last.pt, best_ema.pt, ema.pt,
+                       history.csv, summary.json, config.yaml, train.log
+  submissions/         *.csv, *_study_probs.npy, *_studies.txt
+  jobs/<job_id>/       job.json, train.log, files/
+  jobs/devices.json
+  cache/               预缩放图
+  data/                数据集
+```
+
+关键文件各管一件事：
+
+| 文件 | 作用 |
+| --- | --- |
+| `summary.json` | 判断训练是否完成、结果如何 |
+| `history.csv` | 每 epoch 的指标曲线 |
+| `job.json` | 任务状态与调度信息 |
+| `best.pt` | 普通最优权重 |
+| `best_ema.pt` | EMA 最优权重 |
+| `ema.pt` | 集成可选的 EMA 权重 |
+
+安全做了六件事：命令白名单、参数白名单、路径锁在项目内、`shell=False`、产物下载路径检查、可选 Bearer token。
+
+也仅到内网级别。没有角色和任务所有权，token 是共享的长期密钥，远程 token 明文落盘，没有 TLS、限流和审计。对外暴露必须套反向代理和访问控制。
+
+日志要能回答七件事：实际用的是哪个设备；训练多少图、多少 study；每类正例数和 pos_weight；损失和初始化有没有真的生效；每 epoch 的 train/val loss、Macro-AUC、F1、lr；DDP 的 world size 和全局 batch；任务最后是完成、失败还是 lost。
+
+目标环境是 Python 3.12、torch 2.10.0、torchvision 0.25.0、CUDA 12.8 加 cuDNN 9。四种启动方式：
+
+```text
+主服务      python _main_.py serve --devices 0,1,2,3
+客户端      python _main_.py submit --server http://10.0.0.8:8765 ...
+远程节点    python _main_.py serve --devices 0,1 --port 8765
+拉取 worker python _main_.py worker --server http://10.0.0.8:8765
+```
+
+## 接口
+
+| 方法 | 路径 | 作用 |
 | --- | --- | --- |
-| `Subject_id` | 患者号 | 和测试表一致 |
-| `Study_id` | 检查号 | 零填充字符串，绝不按数字解析 |
-| `Predict_class` | 类别号 | 1..10，每个 study 出满 10 行 |
-| `Probability` | 概率 | 落在 `[0,1]`；超过 1 基本是把 logits 写进去了 |
-| `Gate` | 阈值 | 留空表示用默认阈值 |
-
-写文件先写临时文件再改名，中途失败不会留半个文件。写完查表头与列数、类别是否齐、患者号是否冲突、概率是否越界、有没有重复行、Gate 是否合法。
-
-推理前还有一道预算检查：模型总体积不超过 500MB，单张不超过 100ms。DenseNet121 是 26.5MB，体积能放下十几个，卡住集成规模的是速度。
-
-## 把训练派出去
-
-单卡跑一个配方很快。实际要跑的是「多组参数 × 多折」，手动开终端会乱。所以把「跑什么」和「在哪跑」拆开，中间放一层调度。
-
-两种并行同时存在，不能混。任务级并行是一个任务占一张卡，产物落在各自的 `runs/<run_name>/`，适合扫参数和跑多折。单任务多卡是 `--gpus N`，一个任务占 N 张同机卡，进程内同步同一份权重，只出一份 `best.pt`。多卡之后模型还是一个，等于把 batch 放大。
-
-两种能混用：4 卡机器上跑两个 `--gpus 2` 的任务，各出各的模型。
-
-### 都在本机
-
-```mermaid
-flowchart TB
-  subgraph SUBMIT["提交"]
-    J1["任务 A · 224 配方"]
-    J2["任务 B · 320 配方"]
-    J3["任务 C · 2 卡"]
-  end
-  subgraph SCH["调度器"]
-    Q["队列<br/>优先级 + 提交时间"]
-    SLOTS["分卡<br/>按运行中任务现算"]
-  end
-  subgraph HOST["同一台机器"]
-    G0["卡 0"]
-    G1["卡 1"]
-    G2["卡 2"]
-    G3["卡 3"]
-  end
-  J1 --> Q
-  J2 --> Q
-  J3 --> Q
-  Q --> SLOTS
-  SLOTS -->|"1 张"| G0
-  SLOTS -->|"1 张"| G1
-  SLOTS -->|"2 张 · 多卡"| G2
-  SLOTS -->|"2 张 · 多卡"| G3
-```
-
-分卡不维护计数器，每次都从「正在运行的任务」现算。任务状态本来就落盘了，再存一份内存计数只是多一个会不同步的地方。不同步的表现是两张卡被派了三个任务，症状是莫名 OOM。
-
-### 多机，主服务主动派
-
-远程机器上跑一个同样的 `serve`。主服务把任务发过去，之后状态、日志、产物全代理回来。远程端不用改代码，代价是远程要有同一份代码和数据。
-
-```mermaid
-flowchart LR
-  C["客户端"] -->|"提交"| S["主服务<br/>队列 + 设备表"]
-  S -->|"起子进程"| L["本机卡 0"]
-  S -->|"转发任务"| R1["节点 B · serve"]
-  R1 -->|"起子进程"| B0["节点 B 卡 0"]
-  S -->|"转发任务"| R2["节点 C · serve"]
-  R2 -->|"起子进程"| C0["节点 C 卡 0"]
-  R1 -.->|"状态 / 日志 / 产物"| S
-  R2 -.->|"状态 / 日志 / 产物"| S
-```
-
-派发时只能发相对路径。两台机器的绝对路径不一样。发绝对路径过去，对方只会回「配置文件不存在」，这还要等任务显示「运行中」之后才发生。
-
-多卡任务派到远程时不指定具体哪几张，只说「要几张」，由远程自己的设备表挑。主服务这边的记录只负责算「这台机器被占了几张」。
-
-### 拉取节点，让 worker 主动来
-
-前两种都要求主服务能连到节点。校园网、NAT、容器网络下经常不成立。拉取节点反过来：worker 自己来注册、领任务、回传。
-
-```mermaid
-flowchart LR
-  subgraph INNER["内网 / NAT 后"]
-    W["worker"]
-    WG["本机卡"]
-  end
-  subgraph OUTER["公网可达"]
-    S["主服务"]
-    Q["任务队列"]
-  end
-  W -->|"1 注册"| S
-  W -->|"2 心跳 + 领任务"| S
-  S -->|"3 发任务"| W
-  W -->|"4 增量日志"| S
-  W -->|"5 回传产物"| S
-  W -->|"6 报结果"| S
-  W --> WG
-  Q --> S
-```
-
-五个接口，全是 worker 发起：`/pull/join` 注册并报卡数，`/pull/poll` 心跳加领任务加看有没有被取消，`/pull/log` 补日志，`/pull/artifact` 传产物，`/pull/finish` 报状态、退出码、指标。
-
-失联按心跳算。30 秒没动静就不再派新任务，120 秒判为 `lost`。中间这段时间任务仍显示运行中，它确实可能还在跑。
-
-取消也靠轮询。主服务在任务上打个标记，worker 下次心跳取走，自己在本地杀进程组。没有反向通道，就不可能有「推送取消」。
-
-三种放法对比：
-
-| | 本机 | 远程节点 | 拉取节点 |
-| --- | --- | --- | --- |
-| 谁发起连接 | 不用连 | 主服务 → 节点 | worker → 主服务 |
-| 用在哪 | 本机卡 | 主服务能连到对方 | NAT 后、网络隔离 |
-| 怎么判失联 | 进程退出就知道 | 连续轮询失败 | 心跳断了 120 秒 |
-| 日志与产物 | 直接读 | 主服务代理 | worker 传上来再读 |
-
-任务有六个状态：排队、运行中、成功、失败、取消、失联。
-
-失联和失败要分开。失联只说明结果未知，不代表训练挂了。服务重启后，远程任务和拉取任务都会被拉回运行中重新接管，再由心跳给出真实结论。
-
-进程这块有三处必须做对。
-
-屏蔽用 `CUDA_VISIBLE_DEVICES`，不传 `cuda:1`。训练进程只看得到分给它的卡，代码里任何 `device="cuda"` 都落到对的位置。也就不存在「某处漏改 `cuda:0`，两个任务挤到同一张卡」。
-
-子进程单独开一个进程组，取消时杀整组。训练会 fork 取数进程，多卡还会再起 N-1 个子进程。只杀父进程会留下孤儿占着显存，后面的任务全 OOM，现象是「新任务莫名失败」。这两代子进程继承同一个进程组，一次带走；10 秒不退再强杀。
-
-结果看 `summary.json`，不看退出码。`exit=0` 不代表真训了东西。
-
-## 网页与接口
-
-网页和命令行走同一套 HTTP 接口。服务端是纯标准库的 `ThreadingHTTPServer`，没有 Flask 或 FastAPI。
-
-| 方法 | 路径 | 做什么 |
-| --- | --- | --- |
-| GET | `/` | 控制台页面（鉴权前放行） |
-| GET | `/health` | 概览、设备占用、队列数 |
-| GET | `/jobs` `/jobs/{id}` | 任务列表、单个任务 |
-| GET | `/jobs/{id}/log` | 日志尾部 |
-| GET | `/jobs/{id}/artifacts` | 产物列表与下载 |
+| GET | `/` | 网页控制台 |
+| GET | `/health` | 服务、设备和队列快照 |
+| GET | `/server` | 服务配置摘要 |
+| GET | `/commands` | 命令与参数定义 |
+| GET | `/configs` | train 与 infer 配置 |
+| GET | `/datasets` | 数据集扫描 |
+| GET/POST/PATCH/DELETE | `/devices[...]` | 设备槽位的增删改查与探测 |
+| GET | `/jobs` | 任务列表 |
 | POST | `/jobs` | 提交任务 |
-| POST | `/jobs/{id}/rerun` | 用同样参数再提交 |
-| DELETE | `/jobs/{id}` | 取消 |
-| POST/PATCH/DELETE | `/devices` | 增删改设备、探测 |
-| POST | `/pull/*` | 拉取节点的五个接口 |
+| GET | `/jobs/<id>` | 任务详情 |
+| POST | `/jobs/<id>/rerun` | 重跑 |
+| GET | `/jobs/<id>/log` | 日志 |
+| GET | `/jobs/<id>/artifacts[/name]` | 产物清单与下载 |
+| DELETE | `/jobs/<id>` | 取消 |
+| GET | `/env/doctor`、`/env/config` | 环境检查、生效配置 |
 
-网页能触发的命令和参数，全部登记在 `server/commands.py` 一张表里。9 条命令，15 个参数。每条命令说明四件事：要不要配置、产物是否按 run_name 落目录、产物落在哪、能不能多卡。没登记的键直接报错。
+pull worker 五个接口：
 
-值的检查不复杂，但每条都有原因。不许换行，因为换行能拼出第二条命令。不许以 `-` 开头，因为 `--ckpt --help` 等于绕过白名单塞新选项。路径必须是项目内相对路径，客户端不该能读服务器上任意文件。枚举和数值要有范围，写错的参数得在提交时就说，不是跑完才说。
+- `/pull/join` 注册。
+- `/pull/poll` 心跳、领任务、查取消。
+- `/pull/log` 回传日志。
+- `/pull/finish` 回传终态。
+- `/pull/artifact` 回传产物。
 
-产物也有白名单。训练任务能下载的只有 8 类：汇总、历史、配置、日志、三个权重文件、K 折汇总。推理任务是 `submissions/` 下的三类文件。这既是功能，也决定了客户端能读服务器上哪些文件。
+提交一个训练任务的请求体长这样：
 
-网页是单文件，CSS 和 JS 全写在里面，不请求任何外部资源。内网没外网也照常显示，没有前端构建步骤。
+```json
+{
+  "command": "train",
+  "config": "configs/train/highres.yaml",
+  "overrides": {
+    "train.epochs": "24",
+    "train.run_name": "hr320"
+  },
+  "params": { "gpus": "4" },
+  "priority": 10,
+  "note": "320 baseline"
+}
+```
 
-页面在鉴权之前放行。浏览器地址栏导航发不出鉴权头，拦掉首页只会让人看到浏览器的原生密码框，输完照样 401；页面本身是静态 HTML，不含数据，前端拿到 401 再弹输入框。日志 2 秒轮询，不上长连接，任务状态是分钟级变化，多一条长连接只多一处会断的东西。详情面板只在状态变化时重建，否则 2 秒一次的刷新会把正在看的日志滚回底部。下载走 fetch 再转 blob，直接给链接带不上鉴权头。
-
-前端不做业务校验。参数范围、路径、命令全在服务端判，页面只按类型出控件。
-
-## 怎么确认它能跑
-
-381 项单测，本机约 30 秒。
-
-`test_losses.py` 管四种损失，断言结果与设备无关、权重上 CUDA 不炸。`test_drop_path.py` 管随机深度，断言推理两次输出一致、断点键名不变。`test_mixup.py` 管 MixUp 和 CutMix，断言 λ 与标签一致、单样本批次跳过。`test_optimizer.py` 断言 BN 和 bias 落在不衰减组。`test_init_weights.py` 断言头权重为零时 logits 等于先验。`test_checkpoint.py` 管断点，断言只存权重、快照按指标删。
-
-服务端三组：`test_server.py` 跑完整调度流程（派发、取消、失联、产物白名单），`test_pull_worker.py` 跑拉取协议（领任务、取消、上传、重启后判失联），`test_distributed.py` 真起两个进程跑一轮 DDP。
-
-九步冒烟跑在合成数据上：
+## 测试
 
 ```mermaid
 flowchart LR
-  S1["合成数据"] --> S2["配置回显"] --> S3["患者泄漏检查"] --> S4["预缩放缓存"] --> S5["数据层自检"] --> S6["训练"] --> S7["验证"] --> S8["推理与提交"] --> S9["Gate 十行校验"]
+  S1["合成数据"] --> S2["配置回显"]
+  S2 --> S3["泄漏检查"]
+  S3 --> S4["缓存"]
+  S4 --> S5["数据层自检"]
+  S5 --> S6["训练"]
+  S6 --> S7["验证"]
+  S7 --> S8["推理与提交"]
+  S8 --> S9["5 列 / 10 行校验"]
 ```
 
-合成数据是本地画的高斯亮斑，类别信息直接画进图里，所以模型学得动。分数在这里没有意义，它证明的是另一件事：标签、图像、增强、损失、合并、提交这条链没有错位。AUC 落在 0.5 附近，说明标签和图对不上；能到 0.63，说明整条链是通的。
+合成数据把类别信息画进图像的固定位置。Macro-AUC 接近 0.5 通常说明数据、标签或聚合链路错位了。
 
-本机 MPS 上九步跑完 34 秒，`best macro_auc=0.6298`。提交 12 个 study、120 行，每个 study 正好 10 行。这些数字没有实战意义，价值在于可复现。换一台机器跑同一条命令，得到同一组数，说明没有哪一步偷偷依赖本机状态。
+测试覆盖十块：配置继承、覆盖和校验；标签解析与类别映射；Dataset 和图像缓存；初始化、head 先验、冻结、DropPath；损失、MixUp 与 CutMix、优化器分组；checkpoint、EMA、快照剪枝；DDP 的 sampler、跨 rank 汇总和槽位记账；指标、聚合、概率合并；提交格式和路径安全；本地与远程调度、HTTP、pull worker。
+
+2026-10-28 在 Windows、Python 3.12.10、torch 2.10.0+cu128、torchvision 0.25.0+cu128 上收集 382 项，通过 379 项，失败 3 项。失败集中在平台相关路径：Windows 匿名管道的 `select()`、Windows 的取消与进程组、当前 CUDA/NCCL/gloo 与主机名环境下的 DDP 自测。同一份测试在本机 macOS 上 382 项全过，差异只在这些平台分支。
+
+正式交付前要在目标 Linux 和比赛容器里重跑完整测试与九步冒烟。
+
+## 已知问题
+
+1. `load_checkpoint()` 仍用 `weights_only=False`。
+2. 多模型预测只从第一个 checkpoint 读 class_ids，没有逐模型强校验。
+3. 离线概率合并脚本对官方原始列名的兼容性还没统一。
+4. pull worker 的推理产物用最近一小时的时间窗过滤。
+5. Windows 的管道、进程组和 DDP 环境与 POSIX 不完全一致。
+6. TensorBoard、折后全量训练和边缘裁剪字段还没接线。
+7. 续训没有恢复 EMA 的历史状态。
+8. 安全模型只适用于可信内网。
+
+明确不做的包括多机 DDP、跨主机 NCCL、OOM 自动降 batch 重试、用户权限隔离、中央数据库与跨主服务统一队列、在线诊断 API。
+
+这份规格按提交 `5fd4225` 核对，代码再动就要跟着改。
