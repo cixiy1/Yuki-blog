@@ -207,8 +207,7 @@ run_name 冲突时会自动加 `_r2`、`_r3`。检查三处：有没有和活跃
 %%{init: {"flowchart": {"nodeSpacing": 22, "rankSpacing": 30, "padding": 6, "wrappingWidth": 160}}}%%
 flowchart TD
   Tick["每 2 秒 tick"] --> Scan["回收进程<br/>轮询远程与 pull"]
-  Scan --> Count["按 running 算占用"]
-  Count --> Group["按同机分组"]
+  Scan --> Group["按 running 算占用<br/>按同机分组"]
   Group --> Sort["queued 排序<br/>优先级 + 提交时间"]
   Sort --> Fit{"同机容量够吗"}
   Fit -->|"够"| Dispatch["启动 / 转发 / 派发"]
@@ -519,10 +518,10 @@ pull worker 五个接口：
 ## 测试
 
 ```mermaid
-%%{init: {"flowchart": {"nodeSpacing": 16, "rankSpacing": 22, "padding": 5, "wrappingWidth": 150}}}%%
+%%{init: {"flowchart": {"nodeSpacing": 16, "rankSpacing": 20, "padding": 6, "wrappingWidth": 170}}}%%
 flowchart TB
-  S1["合成数据"] --> S2["配置回显"] --> S3["泄漏检查"] --> S4["缓存"] --> S5["数据自检"]
-  S5 --> S6["训练"] --> S7["验证"] --> S8["推理与提交"] --> S9["5 列 / 10 行"]
+  S1["合成数据 / synth"] --> S2["配置回显 / show-config"] --> S3["泄漏检查 / leakage"] --> S4["缓存 / cache"] --> S5["数据自检"]
+  S5 --> S6["训练 / train"] --> S7["验证 / validate"] --> S8["推理与提交 / predict"] --> S9["格式校验 / 5 列 10 行"]
 ```
 
 合成数据把类别信息画进图像的固定位置。Macro-AUC 接近 0.5 通常说明数据、标签或聚合链路错位了。
