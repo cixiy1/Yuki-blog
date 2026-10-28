@@ -289,7 +289,8 @@ a.card-github.fetch-error
 
   svg
     display: block
-    width: 100%
+    // 按内容宽度显示：窄图不再被拉成整行宽面板，宽图仍受 max-width 约束缩放
+    width: auto
     max-width: 100%
     max-height: 420px
     height: auto
