@@ -19,23 +19,24 @@ comment: true
 ## 整体：谁在跑
 
 ```mermaid
+%%{init: {"flowchart": {"nodeSpacing": 24, "rankSpacing": 36, "padding": 6, "wrappingWidth": 200}}}%%
 flowchart LR
-  Client["客户端<br/>CLI / 浏览器 / HTTP"]
+  Client["客户端<br/>CLI / 浏览器"]
   Main["主服务<br/>队列 + 设备表"]
   LocalCard["本机卡 0"]
-  NodeB["节点 B · serve"]
-  NodeB0["节点 B 卡 0"]
-  NodeC["节点 C · serve"]
-  NodeC0["节点 C 卡 0"]
+  NodeB["节点 B"]
+  NodeB0["B 卡 0"]
+  NodeC["节点 C"]
+  NodeC0["C 卡 0"]
 
-  Client -->|"提交任务"| Main
-  Main -->|"起子进程"| LocalCard
-  Main -->|"转发任务"| NodeB
-  NodeB -->|"起子进程"| NodeB0
-  Main -->|"转发任务"| NodeC
-  NodeC -->|"起子进程"| NodeC0
-  NodeB -.->|"状态 / 日志 / 产物"| Main
-  NodeC -.->|"状态 / 日志 / 产物"| Main
+  Client -->|"提交"| Main
+  Main -->|"起进程"| LocalCard
+  Main -->|"转发"| NodeB
+  NodeB -->|"起进程"| NodeB0
+  Main -->|"转发"| NodeC
+  NodeC -->|"起进程"| NodeC0
+  NodeB -.->|"状态 / 日志"| Main
+  NodeC -.->|"状态 / 日志"| Main
 ```
 
 客户端只提交任务。主服务拿着队列和设备表，可以在本机起进程，也可以把整单任务转发给另一台跑着 `serve` 的机器。节点在自己的卡上起训练进程，状态、日志、产物沿反方向回到主服务。
@@ -65,26 +66,19 @@ flowchart LR
 ## 两个面
 
 ```mermaid
+%%{init: {"flowchart": {"nodeSpacing": 22, "rankSpacing": 26, "padding": 6, "wrappingWidth": 170}}}%%
 flowchart TB
   subgraph Control["控制面"]
-    Submit["提交请求"]
-    Queue["任务队列"]
-    Device["设备注册表"]
-    Dispatch["调度决策"]
-    Reports["状态 / 日志 / 产物汇总"]
+    Submit["提交请求"] --> Dispatch["队列 + 分卡"]
+    Device["设备注册表"] --> Dispatch
+    Reports["状态 / 日志 / 产物"]
   end
   subgraph Compute["计算面"]
-    Process["训练或推理子进程"]
-    Data["数据读取与预处理"]
-    GPU["GPU 前向 / 反向"]
-    Output["checkpoint / submission / summary"]
+    Process["训练或推理子进程"] --> IO["读取 → 前向 → 产物"]
   end
-  Submit --> Queue --> Dispatch
-  Device --> Dispatch
   Dispatch -->|"启动"| Process
-  Process --> Data --> GPU --> Output
   Process -.->|"日志 / 退出码"| Reports
-  Output -.->|"摘要 / 产物"| Reports
+  IO -.->|"摘要 / 产物"| Reports
 ```
 
 控制面回答谁可以跑、现在哪张卡空着、任务到了哪一步。计算面回答这批数据怎么训、模型输出什么、产物写到哪。
@@ -115,17 +109,18 @@ flowchart TB
 ## 主服务内部
 
 ```mermaid
+%%{init: {"flowchart": {"nodeSpacing": 22, "rankSpacing": 30, "padding": 6, "wrappingWidth": 150}}}%%
 flowchart TB
   Client["客户端 / 浏览器"]
-  HTTP["ThreadingHTTPServer<br/>api.py"]
-  Commands["命令注册与参数白名单<br/>commands.py"]
+  HTTP["HTTP<br/>api.py"]
+  Commands["命令白名单<br/>commands.py"]
   Scheduler["Scheduler<br/>scheduler.py"]
   Jobs["JobStore<br/>jobs.py"]
   Devices["DeviceRegistry<br/>devices.py"]
   Local["本地子进程"]
   Remote["远程 serve"]
   Pull["pull worker"]
-  Files["jobs/ 与 runs/ 文件存储"]
+  Files["jobs/ 与 runs/"]
 
   Client --> HTTP
   HTTP --> Commands
@@ -209,17 +204,15 @@ run_name 冲突时会自动加 `_r2`、`_r3`。检查三处：有没有和活跃
 槽位选择每个 tick 都重算：
 
 ```mermaid
+%%{init: {"flowchart": {"nodeSpacing": 22, "rankSpacing": 30, "padding": 6, "wrappingWidth": 160}}}%%
 flowchart TD
-  Tick["scheduler.tick"] --> Reap["回收已退出的本地进程"]
-  Reap --> PollRemote["轮询远程任务"]
-  PollRemote --> PollPull["处理 pull worker 状态"]
-  PollPull --> Count["按 running 任务算每槽位占用"]
-  Count --> Group["按同机分组可用槽位"]
-  Group --> Sort["queued 按优先级和提交时间排序"]
-  Sort --> Fit{"有同机容量够的任务吗"}
-  Fit -->|"有"| Dispatch["本地启动 / 远程转发 / pull 派发"]
-  Fit -->|"没有"| Wait["保持 queued"]
-  Dispatch --> Tick
+  Tick["每 2 秒 tick"] --> Scan["回收进程<br/>轮询远程与 pull"]
+  Scan --> Count["按 running 算占用"]
+  Count --> Group["按同机分组"]
+  Group --> Sort["queued 排序<br/>优先级 + 提交时间"]
+  Sort --> Fit{"同机容量够吗"}
+  Fit -->|"够"| Dispatch["启动 / 转发 / 派发"]
+  Fit -->|"不够"| Wait["保持 queued"]
 ```
 
 排序键是 `(-priority, created_at)`，同优先级先到先跑。本机槽位优先于远程，少一层网络故障面。
@@ -247,22 +240,16 @@ pull 的时序分三段。worker 先 `join`，拿到 device_id 和轮询间隔�
 ## 训练流水线
 
 ```mermaid
+%%{init: {"flowchart": {"nodeSpacing": 18, "rankSpacing": 24, "padding": 6, "wrappingWidth": 220}}}%%
 flowchart TD
-  A["_main_.py"] --> B["cli.main"]
-  B --> C["load_config + --set"]
-  D["train/val CSV"] --> E["labels.py"]
-  C --> E
-  E --> F["train 固定 class_ids 顺序"]
-  F --> G["Dataset"]
-  G --> H["DataLoader"]
-  H --> I["build_model"]
-  I --> J["head prior 初始化"]
-  J --> K["criterion / optimizer / scheduler"]
-  K --> L["Trainer.fit"]
-  L --> M["history.csv"]
-  L --> N["best.pt / last.pt"]
-  L --> O["summary.json"]
-  L --> P["best_ema.pt / ema.pt"]
+  A["_main_.py → cli.main"] --> B["load_config + --set"]
+  C["train/val CSV"] --> D["labels.py 定序"]
+  B --> D
+  D --> E["Dataset → DataLoader"]
+  E --> F["build_model + 初始化"]
+  F --> G["criterion / optimizer / scheduler"]
+  G --> H["Trainer.fit"]
+  H --> I["history / best / summary / EMA"]
 ```
 
 配置继承的优先级是：父配置低于 `_gear_`，`_gear_` 低于当前 YAML，当前 YAML 低于 `--set`。相对路径统一锚到项目根，从任何工作目录启动都指向同一份数据和产物。
@@ -374,16 +361,14 @@ CSV 和 ID 有几条硬规则。所有表以 `dtype=str` 读，`Study_id` 的零
 MixUp 和 CutMix 在 Trainer 里做，抽到就混合图像和标签，CutMix 用矩形粘贴并按面积重算 lambda。多标签的正负元素用同一个 lambda。开了元数据就跳过混合，因为类别字段没法按 lambda 插值。
 
 ```mermaid
+%%{init: {"flowchart": {"nodeSpacing": 22, "rankSpacing": 28, "padding": 6, "wrappingWidth": 130}}}%%
 flowchart LR
-  X["Input<br/>1 x H x W"] --> Stem["conv0<br/>1 -> 64"]
-  Stem --> Dense["DenseNet121 features"]
-  Dense --> Pool["AdaptiveAvgPool"]
-  Pool --> Feat["1024"]
-  Meta["metadata one-hot"] --> MLP["MetaMLP<br/>D -> 32"]
+  X["Input<br/>1 x H x W"] --> Backbone["conv0 1→64<br/>DenseNet121<br/>AvgPool"] --> Feat["1024"]
+  Meta["metadata<br/>one-hot"] --> MLP["MetaMLP<br/>D → 32"]
   Feat --> Concat["concat"]
   MLP --> Concat
-  Concat --> Head["Linear<br/>1032 或 1024 -> 10"]
-  Head --> Logits["logits B x 10"]
+  Concat --> Head["Linear<br/>1032 / 1024 → 10"]
+  Head --> Logits["logits<br/>B x 10"]
 ```
 
 模型默认 6.96M 参数，fp32 约 26.6 MB。输出永远是 logits，不接 sigmoid。
@@ -414,19 +399,18 @@ study 清单是权威顺序。输出严格等于清单，清单外的 study 告�
 Macro-AUC 逐类算 ROC-AUC。某类只有一种标签时返回 NaN，只对有效类取平均，同时记录 `skipped_classes`。Macro-F1 用阈值二值化，是辅助指标，不参与主排序。
 
 ```mermaid
+%%{init: {"flowchart": {"nodeSpacing": 20, "rankSpacing": 26, "padding": 6, "wrappingWidth": 200}}}%%
 flowchart TD
-  Ckpt["1 到 N 个 checkpoint"] --> Meta["读 checkpoint meta"]
-  Meta --> Model["重建模型"]
+  Ckpt["checkpoint 1..N"] --> Model["读 meta，重建模型"]
   Test["test.csv + images"] --> Dataset["测试 Dataset"]
   Dataset --> TTA["逐套 TTA 推理"]
   Model --> TTA
-  TTA --> AvgTTA["模型内 TTA 概率平均"]
-  AvgTTA --> AvgModel["跨模型概率平均"]
-  AvgModel --> Aggregate["按 test study 清单聚合"]
-  Aggregate --> Prior["无图 study 先验补齐"]
-  Prior --> CSV["submission.csv"]
-  CSV --> Extra["study_probs.npy + studies.txt"]
-  Extra --> Validate["提交校验"]
+  TTA --> AvgTTA["模型内平均"]
+  AvgTTA --> AvgModel["跨模型平均"]
+  AvgModel --> Aggregate["按 study 清单聚合"]
+  Aggregate --> Prior["无图 study 补先验"]
+  Prior --> Out["csv + npy + txt"]
+  Out --> Validate["提交校验"]
 ```
 
 验证和提交共用同一条 predictor 路径，本地指标和线上提交不会分叉。
@@ -535,15 +519,10 @@ pull worker 五个接口：
 ## 测试
 
 ```mermaid
-flowchart LR
-  S1["合成数据"] --> S2["配置回显"]
-  S2 --> S3["泄漏检查"]
-  S3 --> S4["缓存"]
-  S4 --> S5["数据层自检"]
-  S5 --> S6["训练"]
-  S6 --> S7["验证"]
-  S7 --> S8["推理与提交"]
-  S8 --> S9["5 列 / 10 行校验"]
+%%{init: {"flowchart": {"nodeSpacing": 16, "rankSpacing": 22, "padding": 5, "wrappingWidth": 150}}}%%
+flowchart TB
+  S1["合成数据"] --> S2["配置回显"] --> S3["泄漏检查"] --> S4["缓存"] --> S5["数据自检"]
+  S5 --> S6["训练"] --> S7["验证"] --> S8["推理与提交"] --> S9["5 列 / 10 行"]
 ```
 
 合成数据把类别信息画进图像的固定位置。Macro-AUC 接近 0.5 通常说明数据、标签或聚合链路错位了。
