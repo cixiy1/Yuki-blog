@@ -1,5 +1,5 @@
 ---
-title: Yuki 内核：一个不带人格的 agent 库
+title: Yuki 内核架构解析
 published: 2026-10-28
 description: 把 agent 的回合循环、工具闭环、上下文压缩、审批和记忆拆成一个可嵌入的 Python 包。按代码结构逐层讲：分层、回合、Provider 边界、工具包、沙箱、预算、事件、重试，以及几处不打算掩盖的取舍。
 tags:
