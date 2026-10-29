@@ -15,9 +15,9 @@ seriesOrder: 4
 comment: true
 ---
 
-想让一个 AI 住进 QQ 群，能看图、能发表情包、记得住人、冷场会自己开口，而且说话有脾气而不是客服腔。这篇文章是从空白机器到跑起来的全过程，按顺序写，每一步都给命令、路径和真实输出。
+我想在 QQ 群里养个 AI：能看图，能发表情包，记得住人，冷场会自己开口，说话有脾气而不是客服腔。花了两天从零搭完，中间踩了三个真坑。按顺序写下来，命令、路径、日志都是本机实测。
 
-**文中所有 QQ 号、群号均已打码**（主人 `213****636`、机器人自己 `283****679`、主群 `105****275`），换成你自己的即可。
+**文中 QQ 号和群号已打码**：主人 `213****636`、机器人自己 `283****679`、主群 `105****275`，换成你自己的就行。
 
 **实测环境**
 
@@ -31,13 +31,13 @@ comment: true
 | 安装方式 | `uv tool install astrbot` |
 | 最终插件数 | 51（45 个外部 + 6 个自写） |
 
-**边界**：只在自己的群和私聊里跑，不群发、不加陌生群、不转发他人消息到外部。AstrBot 接的是你自己的 QQ 号，账号风险自己承担。
+**边界**：只在自己的群和私聊里跑，不群发，不加陌生群，不转发他人消息到外部。AstrBot 接的是你自己的 QQ 号，账号风险自己承担。
 
 ---
 
-## 一、先把需求钉死
+## 一、我要什么
 
-动手前先把"要什么"列清楚，后面选插件、写补丁都用得上：
+动手前先列清单，后面选插件、写补丁都对着它做：
 
 | 需求 | 落到哪一层 |
 |---|---|
@@ -51,7 +51,7 @@ comment: true
 
 ---
 
-## 二、架构：三层
+## 二、三层架构
 
 ```mermaid
 flowchart LR
@@ -62,7 +62,9 @@ flowchart LR
     C --> F[数据目录 SQLite 与 JSON]
 ```
 
-NapCat 只负责登录 QQ 和收发协议包，不碰逻辑；AstrBot 负责适配、插件调度、接模型。两边通过 OneBot v11 的 WebSocket 连。选反向 WS 是因为 AstrBot 这边做服务端，NapCat 主动连过来，重启 AstrBot 不用改 NapCat 配置。
+NapCat 只负责登录 QQ、收发协议包，不碰逻辑。AstrBot 负责适配、插件调度、接模型。两边用 OneBot v11 的 WebSocket 连。
+
+选反向 WS 是因为 AstrBot 这边做服务端，NapCat 主动连过来，重启 AstrBot 不用改 NapCat 配置。
 
 ---
 
@@ -93,13 +95,15 @@ astrbot run
 └── temp/                # 收图/收语音的临时目录
 ```
 
-WebUI 默认在 `6185`，浏览器打开 `http://127.0.0.1:6185` 设账号密码。**这里有个坑**：升级后密码从明文换成 pbkdf2，老密码会失效；如果后面要用 API，直接从 `cmd_config.json` 里读 `dashboard.jwt_secret` 自签令牌更省事（见「热重载」一节）。
+WebUI 默认在 `6185`，浏览器打开 `http://127.0.0.1:6185` 设账号密码。
+
+注意：升级后密码从明文换成了 pbkdf2，老密码会失效。后面要用 API 的话，直接从 `cmd_config.json` 读 `dashboard.jwt_secret` 自签令牌更省事，见「热重载」一节。
 
 ---
 
 ## 四、装 NapCat 并接上
 
-用官方安装器（macOS 上是 `NapCatInstaller`）装好后扫码登录。然后在 NapCat 的网络配置里**新建反向 WebSocket**：
+用官方安装器（macOS 上是 `NapCatInstaller`）装好后扫码登录。然后在 NapCat 的网络配置里新建反向 WebSocket：
 
 | 项 | 值 |
 |---|---|
@@ -127,7 +131,7 @@ WebUI 默认在 `6185`，浏览器打开 `http://127.0.0.1:6185` 设账号密码
 tail -f /Users/yuki/data/logs/astrbot.log | grep -i aiocqhttp
 ```
 
-看到连接建立、上线事件推过来就算通。此时私聊机器人应该已经有反应（用的是默认人格，会很客服）。
+看到连接建立、上线事件推过来就算通。此时私聊机器人应该已经有反应，用的是默认人格，会很客服。
 
 ---
 
@@ -148,20 +152,19 @@ WebUI 的「服务提供商」页里加一个 OpenAI 兼容源，填 DeepSeek �
 ]
 ```
 
-`modalities` 里写 `image` 只是声明它"可以"接图，**不等于有视觉能力**。`deepseek-flash` 是纯文本模型，后面「看得懂图」这条会卡住，文末交代。
+`modalities` 里写 `image` 只是声明它"可以"接图，不等于有视觉能力。`deepseek-flash` 是纯文本模型，「看得懂图」这条会卡住，文末交代。
 
 ---
 
-## 六、人格：别让插件替她说话
+## 六、人格只放系统提示词
 
-人格来源我用了 whyever77 的 `dafeiyu-astrbot` 仓库（`persona/大肥鱼-人格.md`）——抖音版那套：自称**本鲸**，叫用户**鱼片**，被叫"大肥鱼"会小声抗议。这套比常见的"温柔女仆 AI"有脾气得多，是我要的。
+人格我用了 whyever77 的 `dafeiyu-astrbot` 仓库，文件是 `persona/大肥鱼-人格.md`，抖音版那套。她自称**本鲸**，叫用户**鱼片**，被叫"大肥鱼"会小声抗议。比常见的"温柔女仆 AI"有脾气得多，是我要的。
 
-导入方式两种：
+导入方式两种：直接放进 AstrBot 的人格页，适合只有一份人格的场景；或者插件注入，适合人格要按群、按人切换。
 
-1. **直接放进 AstrBot 的人格页**：适合只有一份人格、不搞复杂注入的场景；
-2. **插件注入**：适合人格要按群/按人切换。
+我选了第一种，而且给自己立了条规矩：**人格只放系统提示词，插件一律不写人格，只补事实**。
 
-我的做法：**人格只放系统提示词，插件一律不写人格，只补事实**。这条纪律后面救了命——插件库里有一批"人格类"插件（persona-core / selfaware / factguard / scene / will / agency），它们会各自往提示词里塞一段"你应该怎样"，跟抖音版人格正面冲突，结果是说话一会儿像 ChatGPT 一会儿像鲸鱼娘。解决见下一节。
+这条规矩后面救了命。插件库里有一批"人格类"插件（persona-core / selfaware / factguard / scene / will / agency），各自往提示词里塞一段"你应该怎样"，跟抖音版人格正面冲突。结果就是说话一会儿像 ChatGPT 一会儿像鲸鱼娘。解决见下一节。
 
 ---
 
@@ -186,13 +189,13 @@ WebUI 的「服务提供商」页里加一个 OpenAI 兼容源，填 DeepSeek �
 | 插件 | 干什么 |
 |---|---|
 | `astrbot_plugin_dafeiyu_core` | 事实锚（被问身份按事实答，不编肉身经历）、出口拦截（不许把 traceId/API 报错发进群）、意志（被踩线真的不回）、群场景（哪个群、几点）、心跳 |
-| `astrbot_plugin_dafeiyu_notes` | 给她三个工具 `remember` / `recall` / `forget`，直接写进 dsh-memory 的 facts 表——**跟自动抽取的记忆同一张表、同一条注入链路**，不另起炉灶 |
+| `astrbot_plugin_dafeiyu_notes` | 给她三个工具 `remember` / `recall` / `forget`，直接写进 dsh-memory 的 facts 表——跟自动抽取的记忆同一张表、同一条注入链路，不另起炉灶 |
 | `astrbot_plugin_dafeiyu_stickerlib` | 表情包按内容 md5 建库，同一张图再出现她认得出名字；想发就写 `[表情包:名字]`，插件发原图。不依赖视觉模型 |
 | `astrbot_plugin_dafeiyu_crossmem` | 跨会话记忆：私聊当总账本，群里只带全局条目，别人的档案换会话不给看 |
 | `astrbot_plugin_dafeiyu_qzone` | 说说相关 |
 | `astrbot_plugin_dafeiyu_fspatch` | 文件系统兜底，见「坑三」 |
 
-自写插件的通用纪律：**fail-open**。读不到库、抛异常、超时一律放行，绝不挡正常回复。一个插件崩了就全群哑火，代价太高。
+自写插件我统一按 fail-open 写：读不到库、抛异常、超时一律放行，绝不挡正常回复。一个插件崩了就全群哑火，代价太高。
 
 ---
 
@@ -208,7 +211,7 @@ WebUI 的「服务提供商」页里加一个 OpenAI 兼容源，填 DeepSeek �
 [dsh-effect] 状态读取失败
 ```
 
-### 诊断（关键：先分清"路径错"还是"没触发"）
+### 先分清"路径错"还是"没触发"
 
 全库扫一遍硬编码：
 
@@ -219,7 +222,7 @@ grep -rn '"/AstrBot/data' /Users/yuki/data/plugins --include=*.py | wc -l
 
 这 26 处全部没有 env 兜底，默认写死 `/AstrBot/data`。而我的数据目录是 `/Users/yuki/data`，macOS 根目录下也没有 `/AstrBot`。
 
-**但缺文件不等于路径错**。有一批插件是懒建库（`__init__` 里不 connect，第一次被调用才连），所以 `dsh_social.db`、`state.json` 不存在属于"还没触发"。判断方法：看日志是 `OperationalError`（路径错，建不了库）还是"文件不存在但没有任何报错"（未触发）。两者处理方式完全不同——前者必须改，后者不用管。
+但缺文件不等于路径错。有一批插件是懒建库（`__init__` 里不 connect，第一次被调用才连），所以 `dsh_social.db`、`state.json` 不存在属于"还没触发"。判断方法看日志：是 `OperationalError`（路径错，建不了库），还是"文件不存在但没有任何报错"（未触发）。前者必须改，后者不用管。
 
 ### 解法一：env 单一源
 
@@ -240,11 +243,11 @@ export DSH_STEAL_HOME="$D/stickerthief"
 # ... 共 126 个 DSH_* 变量
 ```
 
-注意 `D=` 这行**没有 export 前缀**——后面 `"$D/xxx.db"` 要靠 shell 展开。这个细节在第九节又咬了我一次。
+注意 `D=` 这行没有 export 前缀，后面 `"$D/xxx.db"` 要靠 shell 展开。这个细节在第九节又咬了我一次。
 
-### 解法二：代码侧兜底（env 没设也活得下去）
+### 解法二：代码侧兜底
 
-给 22 个插件文件注入同一个路径解析函数，替换掉硬编码字符串。以 `dsh-mind` 为例：
+env 没设也得活得下去。给 22 个插件文件注入同一个路径解析函数，替换掉硬编码字符串。以 `dsh-mind` 为例：
 
 ```python
 def _dfy_data() -> str:
@@ -269,9 +272,9 @@ cp -p plugin/main.py plugin/main.py.bak-20261027b
 python3 -m compileall -q /Users/yuki/data/plugins/*/   # 64 个文件，0 错
 ```
 
-两层保险都留着：env 是主干，代码兜底是 env 漏掉时的安全网。**只做一层迟早会漏。**
+两层都留着：env 是主干，代码兜底是 env 漏掉时的安全网。只做一层迟早会漏。
 
-### 解法三：启动器包装，杜绝"忘记 source"
+### 解法三：启动器包装
 
 手动启动最容易漏掉 source env，一漏就是十几个插件静默失效。直接改 `~/.local/bin/astrbot`，在 import 之前解析 env 文件：
 
@@ -305,10 +308,10 @@ if __name__ == "__main__":
 
 两个细节：
 
-1. **逐行解析 + `expandvars`**。第一版我只认 `export ` 开头的行，`D=` 被跳过了，结果六个变量的值变成字面量 `$D/dsh_memory.db`。
-2. **`unset PYTHONPATH`**。本机有 WorkBuddy 注入的 Python shim（`sitecustomize`），会在启动时 raise PermissionError，AstrBot 起不来。
+1. 逐行解析 + `expandvars`。第一版我只认 `export ` 开头的行，`D=` 被跳过了，结果六个变量的值变成字面量 `$D/dsh_memory.db`。
+2. `unset PYTHONPATH`。本机有 WorkBuddy 注入的 Python shim（`sitecustomize`），会在启动时 raise PermissionError，AstrBot 起不来。
 
-> `uv tool upgrade astrbot` 会覆盖这个文件，升级后记得重新打补丁。
+`uv tool upgrade astrbot` 会覆盖这个文件，升级后记得重新打补丁。
 
 ---
 
@@ -332,7 +335,7 @@ grep -rhn -oE 'DSH_[A-Z_]+_(OWNER|GROUPS|SELF_ID)' /Users/yuki/data/plugins --in
   | sed 's/.*\(DSH_[A-Z_]*\).*/\1/' | sort -u
 ```
 
-结果：26 个群号变量、27 个主人号变量，默认不是空就是假号 `2774000001`，机器人自己的 ID 也没设。也就是说——**插件装了、加载了、没报错，但在我的群里一行代码都没生效**。
+结果：26 个群号变量、27 个主人号变量，默认不是空就是假号 `2774000001`，机器人自己的 ID 也没设。插件装了、加载了、没报错，但在我的群里一行代码都没生效。
 
 ### 解法
 
@@ -356,7 +359,7 @@ export DSH_INITIATE_SELF_ID=283****679
 export DSH_PROACTIVE_SELF_ID=283****679
 ```
 
-第一批我只补了 15 个，以为够了；第二轮全量体检才发现漏了十几个。**这类配置没有继承关系，一个个补，别偷懒。**
+第一批我只补了 15 个，以为够了；第二轮全量体检才发现漏了十几个。这类配置没有继承关系，一个个补。
 
 顺带发现 `dsh-homophone` 要读的 `homophone_data.json` 词库根本不存在（插件只写了读取逻辑，没带数据），自己造一个：
 
@@ -389,18 +392,18 @@ OSError: [Errno 1] Operation not permitted:
 
 ### 诊断
 
-先排除最可疑的：本机的 Python shim 会不会劫持了 `os.replace`？实测直接调 `os.replace` 是成功的，报错是标准 `OSError` Errno 1，不是 shim 抛的自定义异常——**shim 不是元凶**。
+先排除最可疑的：本机的 Python shim 会不会劫持了 `os.replace`？实测直接调 `os.replace` 能成功，报错也是标准 `OSError` Errno 1。shim 不是元凶。
 
 真因两条叠加：
 
 1. `temp/` 里的文件带 `com.apple.provenance` 扩展属性（macOS 的来源追踪标记）；
 2. 进程运行在受限安全上下文里（从某些终端工具派生的进程会继承沙箱），对带这个标记的文件 `rename` 被系统拒绝。
 
-验证方法：同一个操作，从你自己手动开的终端跑，图片正常；从 agent 工具派生的进程跑，必失败。**同一份代码、两个结果，说明问题在进程上下文，不在代码。**
+验证方法：同一个操作，从你自己手动开的终端跑，图片正常；从 agent 工具派生的进程跑，必失败。同一份代码、两个结果，说明问题在进程上下文，不在代码。
 
-### 解法一：进程内兜底补丁（自写 fspatch 插件）
+### 解法一：进程内兜底补丁
 
-不改 AstrBot 源码，把 `os.replace` / `os.rename` / `Path.replace` / `Path.rename` 包一层：
+不改 AstrBot 源码，把 `os.replace` / `os.rename` / `Path.replace` / `Path.rename` 包一层，写成自写插件 fspatch：
 
 ```python
 _RETRY_ERRNOS = {1, 13, 18, 16, 30}        # EPERM/EACCES/EXDEV/EBUSY/EROFS
@@ -434,11 +437,11 @@ def _safe_replace(src, dst, **kw):
     return None
 ```
 
-`_install()` 在 **import 时就执行**，不等插件实例化——否则早期调用来不及兜住。
+`_install()` 在 import 时就执行，不等插件实例化，否则早期调用来不及兜住。
 
-### 解法二：根治——让进程由 launchd 派生
+### 解法二：根治
 
-补丁是兜底，根治是换进程出身。用 launchd 启动，进程不继承终端沙箱，`rename` 从根上不再被拒（见下节）。
+补丁是兜底，根治是换进程出身。用 launchd 启动，进程不继承终端沙箱，`rename` 从根上不再被拒。见下节。
 
 ---
 
@@ -472,7 +475,7 @@ print(urllib.request.urlopen(req).read().decode())
 
 两个注意点：
 
-- **插件名传错会 fallthrough 重载全部插件**。想精确重载某个插件，名字必须和目录名完全一致。
+- 插件名传错会 fallthrough 重载全部插件。想精确重载某个插件，名字必须和目录名完全一致。
 - reload 会清 `sys.modules`，子模块（`mind_logic.py` 这种）也会一起重新加载，不用担心改了子模块不生效。
 
 ---
@@ -554,7 +557,7 @@ lsof -i :6185 | head    # WebUI
 
 ## 十四、还差什么
 
-诚实交代没做完的部分：
+没做完的部分：
 
 | 遗留 | 状态 | 说明 |
 |---|---|---|
@@ -563,12 +566,4 @@ lsof -i :6185 | head    # WebUI
 | `dsh-express` | 空转 | 配了群号但行为未验证 |
 | 情感 / 黑话 / 社交距离 | 影子模式 | `SHADOW=1` 只算不改，观察一天确认不闹再切 0 |
 
----
-
-## 附：这次踩坑的三条通用教训
-
-1. **"加载成功"不等于"生效"**。插件能 import、不报错、出现在列表里，跟它在你的群里真的跑起来完全是两回事。默认值（假号、硬编码路径）是最大的沉默杀手——它不报错，只是什么都不做。
-2. **先分清"路径错"和"没触发"**。前者必须改，后者不用管。判断依据是日志里有没有 `OperationalError`。
-3. **同一份代码两种结果时，先看进程出身**，别急着改代码。这次 `os.replace` 卡了我很久，真因是进程上下文带了沙箱，不是代码逻辑。
-
-配置散落在 40 多个插件里时，集中成一个 env 文件 + 一个包装启动器，是这整套搭建里性价比最高的两件事。
+最后记一笔：插件能 import、不报错、出现在列表里，跟它在你的群里真的跑起来是两回事。这次三个坑里有两个都是"默认值"造成的——假号、硬编码路径，它们不报错，只是什么都不做。
