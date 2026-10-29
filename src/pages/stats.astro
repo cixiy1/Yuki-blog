@@ -323,21 +323,38 @@ const posts = enabled ? await getStatsPostList() : [];
     overflow: visible;
   }
 
+  /* 柱区与底部轴共用同一套列定义：--sp-n 由脚本写入天数。
+     两个容器各自 repeat 一遍，列宽和间距完全一致，逐列才能对齐。 */
+  .sp-chart,
+  .sp-axis {
+    display: grid;
+    grid-template-columns: repeat(var(--sp-n, 30), minmax(0, 1fr));
+    gap: 0 3px;
+  }
+
   .sp-chart {
-    display: flex;
-    align-items: flex-end;
-    gap: 3px;
     height: 11rem;
     /* 顶部留出柱顶数值的高度，柱高 100% 时数字仍能完整显示 */
     padding-top: 1.2rem;
-    margin-bottom: 1.6rem;
+    align-items: end;
+  }
+
+  /* 周背景块：隔周着色，跨列覆盖本周全部柱子（含柱子之间的 gap）。
+     .sp-chart 是 align-items:end（柱底对齐），块会因此塌成 0 高，得单独拉满；
+     再用负的下边距往下兜一点，把这一周的周几字样也框进去，分组才读得出来。 */
+  .sp-week-bg {
+    grid-row: 1;
+    align-self: stretch;
+    margin-bottom: -1.5rem;
+    border-radius: 6px;
+    background: var(--btn-regular-bg);
   }
 
   .sp-bar-wrap {
+    grid-row: 1;
     position: relative;
-    flex: 1 1 0;
-    min-width: 0;
     height: 100%;
+    min-width: 0;
     display: flex;
     align-items: flex-end;
     justify-content: center;
@@ -381,10 +398,65 @@ const posts = enabled ? await getStatsPostList() : [];
     opacity: 0.5;
   }
 
+  /* 四位数（单日上千）在窄柱子里会贴边，收一号字 */
+  .sp-bar-val.is-long {
+    font-size: 0.5rem;
+  }
+
+  /* 底部轴：第一行每柱周几（与柱区逐列对齐），第二行每周起止日期 */
+  .sp-axis {
+    grid-template-rows: auto auto;
+    margin-top: 0.55rem;
+    row-gap: 0.55rem;
+    font-size: 0.6rem;
+    line-height: 1.1;
+    color: var(--content-meta);
+  }
+
+  .sp-axis-dow {
+    grid-row: 1;
+    justify-self: center;
+    white-space: nowrap;
+  }
+
+  /* 周末的字淡一档，30 个单字排在一起时才有节奏 */
+  .sp-axis-dow.is-weekend {
+    opacity: 0.5;
+  }
+
+  .sp-axis-dow.is-today {
+    color: var(--primary);
+    font-weight: 600;
+    opacity: 1;
+  }
+
+  .sp-axis-week {
+    grid-row: 2;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .sp-axis-range {
+    opacity: 0.65;
+  }
+
+  .sp-chart-foot {
+    margin: 0.6rem 0 0;
+    font-size: 0.75rem;
+    color: var(--content-meta);
+    text-align: center;
+  }
+
   @media (max-width: 768px) {
     /* 竖排的三位数标签要 25px 高，顶部留白得跟着放大，否则贴到标题上 */
     .sp-chart {
       padding-top: 2.6rem;
+    }
+
+    /* 窄屏柱子只剩 8px 上下，间距跟着收，两边必须同时改才能对齐 */
+    .sp-chart,
+    .sp-axis {
+      gap: 0 2px;
     }
 
     .sp-bar-val {
@@ -393,31 +465,16 @@ const posts = enabled ? await getStatsPostList() : [];
       font-size: 0.55rem;
       letter-spacing: -0.05em;
     }
-  }
 
-  /* 四位数（单日上千）在窄柱子里会贴边，收一号字 */
-  .sp-bar-val.is-long {
-    font-size: 0.5rem;
-  }
+    /* 周几单字收到 8px，正好一列宽，再大会压住隔壁 */
+    .sp-axis {
+      font-size: 0.5rem;
+    }
 
-  .sp-bar-label {
-    position: absolute;
-    bottom: -1.35rem;
-    font-size: 0.65rem;
-    color: var(--content-meta);
-    white-space: nowrap;
-  }
-
-  .sp-bar-wrap.is-today .sp-bar-label {
-    color: var(--primary);
-    font-weight: 600;
-  }
-
-  .sp-chart-foot {
-    margin: 0;
-    font-size: 0.75rem;
-    color: var(--content-meta);
-    text-align: center;
+    /* 一周只剩 60 多像素，起止区间放不下，只留起日 */
+    .sp-axis-range {
+      display: none;
+    }
   }
 
   /* 排行榜 */

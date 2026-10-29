@@ -75,6 +75,13 @@
 		return parts.length === 3 ? parts[1] + "/" + parts[2] : d;
 	}
 
+	/** 星期几（0=周日 … 6=周六）。日期串是本地口径的 YYYY-MM-DD，别用 Date 解析字符串以免时区偏移 */
+	function dowOf(d) {
+		var parts = String(d).split("-");
+		if (parts.length !== 3) return 1;
+		return new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2])).getDay();
+	}
+
 	/* ------------------------------------------------------------------ */
 	/* 概览卡片                                                             */
 	/* ------------------------------------------------------------------ */
@@ -137,29 +144,49 @@
 			}
 
 			var html = [];
-			var labelStep = Math.max(1, Math.ceil(values.length / 8));
-			var lastIndex = values.length - 1;
+			var days = values.length;
+			var dates = series.dates || [];
+			var dowChars = ["日", "一", "二", "三", "四", "五", "六"];
+			var todayKey = S.today();
 
-			html.push('<div class="sp-chart">');
-			for (var j = 0; j < values.length; j++) {
+			// 按自然周（周一为首）切段：底部用它画周标识与背景块
+			var weeks = [];
+			for (var w = 0; w < days; w++) {
+				var dow = dowOf(dates[w]);
+				if (!weeks.length || dow === 1) weeks.push({ start: w, end: w });
+				else weeks[weeks.length - 1].end = w;
+			}
+
+			html.push('<div class="sp-chart" style="--sp-n:' + days + '">');
+			// 周背景块先入 DOM：与柱子同列叠放时，DOM 在后的柱子才在上面
+			for (var k = 0; k < weeks.length; k++) {
+				if (k % 2) continue; // 隔周着色，否则相邻两周的色块会连成一片
+				html.push(
+					'<div class="sp-week-bg" style="grid-column:' +
+						(weeks[k].start + 1) +
+						" / span " +
+						(weeks[k].end - weeks[k].start + 1) +
+						'"></div>'
+				);
+			}
+			for (var j = 0; j < days; j++) {
 				var val = typeof values[j] === "number" ? values[j] : 0;
 				var pct = Math.max(2, Math.round((val / max) * 100));
-				var isToday = series.dates[j] === S.today();
+				var isToday = dates[j] === todayKey;
 				var valText = num(val);
-				// 「今天」用文字点出来（刻度写成「今天」+ 主题色加粗），而不是换柱子颜色
-				var label = isToday ? "今天" : shortDate(series.dates[j]);
-				// 末尾一定标注；离末尾太近的常规刻度跳过，避免文字挤在一起
-				var showLabel =
-					j === lastIndex || (lastIndex - j >= 2 && j % labelStep === 0);
-				// 0 的那天不画柱子：刚上线时历史全是 0，画出来会像一条虚线被当成数据
+				var dowText = dowChars[dowOf(dates[j])];
 				html.push(
 					'<div class="sp-bar-wrap' +
 						(isToday ? " is-today" : "") +
 						(val > 0 ? "" : " is-zero") +
+						'" style="grid-column:' +
+						(j + 1) +
 						'" title="' +
 						escapeHtml(
-							(isToday ? "今天 " : "") +
-								shortDate(series.dates[j]) +
+							shortDate(dates[j]) +
+								" 周" +
+								dowText +
+								(isToday ? "（今天）" : "") +
 								"　" +
 								val +
 								" 次浏览"
@@ -174,10 +201,45 @@
 						'%">' +
 						valText +
 						"</span>" +
-						(showLabel
-							? '<span class="sp-bar-label">' + escapeHtml(label) + "</span>"
-							: "") +
 						"</div>"
+				);
+			}
+			html.push("</div>");
+
+			// 底部轴：与柱区共用同一套列定义，第一行每柱周几，第二行每周区间
+			html.push('<div class="sp-axis" style="--sp-n:' + days + '">');
+			for (var m = 0; m < days; m++) {
+				var dIdx = dowOf(dates[m]);
+				var isT = dates[m] === todayKey;
+				html.push(
+					'<span class="sp-axis-dow' +
+						(isT ? " is-today" : "") +
+						(dIdx === 0 || dIdx === 6 ? " is-weekend" : "") +
+						'" style="grid-column:' +
+						(m + 1) +
+						'">' +
+						(isT ? "今" : dowChars[dIdx]) +
+						"</span>"
+				);
+			}
+			for (var n = 0; n < weeks.length; n++) {
+				var ws = weeks[n].start;
+				var we = weeks[n].end;
+				html.push(
+					'<span class="sp-axis-week" style="grid-column:' +
+						(ws + 1) +
+						" / span " +
+						(we - ws + 1) +
+						'"><span class="sp-axis-date">' +
+						escapeHtml(shortDate(dates[ws])) +
+						"</span>" +
+						// 首尾残周只有一两天，写成「起 – 止」会溢出到卡片外，只留起日
+						(we - ws >= 2
+							? '<span class="sp-axis-range"> – ' +
+								escapeHtml(shortDate(dates[we])) +
+								"</span>"
+							: "") +
+						"</span>"
 				);
 			}
 			html.push("</div>");
