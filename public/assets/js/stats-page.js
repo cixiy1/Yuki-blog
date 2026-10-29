@@ -145,6 +145,7 @@
 				var val = typeof values[j] === "number" ? values[j] : 0;
 				var pct = Math.max(2, Math.round((val / max) * 100));
 				var isToday = series.dates[j] === S.today();
+				var valText = num(val);
 				// 「今天」用文字点出来（刻度写成「今天」+ 主题色加粗），而不是换柱子颜色
 				var label = isToday ? "今天" : shortDate(series.dates[j]);
 				// 末尾一定标注；离末尾太近的常规刻度跳过，避免文字挤在一起
@@ -165,6 +166,14 @@
 						) +
 						'">' +
 						(val > 0 ? '<div class="sp-bar" style="height:' + pct + '%"></div>' : "") +
+						// 柱顶数值：0 也标出来，不然看不出那天是真的没人来还是没取到数
+						'<span class="sp-bar-val' +
+						(valText.length >= 4 ? " is-long" : "") +
+						'" style="bottom:' +
+						(val > 0 ? pct : 0) +
+						'%">' +
+						valText +
+						"</span>" +
 						(showLabel
 							? '<span class="sp-bar-label">' + escapeHtml(label) + "</span>"
 							: "") +

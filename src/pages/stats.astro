@@ -328,6 +328,8 @@ const posts = enabled ? await getStatsPostList() : [];
     align-items: flex-end;
     gap: 3px;
     height: 11rem;
+    /* 顶部留出柱顶数值的高度，柱高 100% 时数字仍能完整显示 */
+    padding-top: 1.2rem;
     margin-bottom: 1.6rem;
   }
 
@@ -353,6 +355,49 @@ const posts = enabled ? await getStatsPostList() : [];
 
   .sp-bar-wrap:hover .sp-bar {
     filter: brightness(1.1);
+  }
+
+  /* 柱顶数值：紧贴柱顶、向上生长。窄屏柱子只有十几像素宽，横向三位数会糊成一片，
+     所以 ≤768px 改成竖排（text-orientation: upright 让每个数字正立）。 */
+  .sp-bar-val {
+    position: absolute;
+    left: 50%;
+    transform: translate(-50%, -2px);
+    font-size: 0.6rem;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+    color: var(--content-meta);
+    white-space: nowrap;
+    pointer-events: none;
+  }
+
+  .sp-bar-wrap.is-today .sp-bar-val {
+    color: var(--primary);
+    font-weight: 600;
+  }
+
+  /* 0 的那天数值调淡，避免和真实小数值混在一起 */
+  .sp-bar-wrap.is-zero .sp-bar-val {
+    opacity: 0.5;
+  }
+
+  @media (max-width: 768px) {
+    /* 竖排的三位数标签要 25px 高，顶部留白得跟着放大，否则贴到标题上 */
+    .sp-chart {
+      padding-top: 2.6rem;
+    }
+
+    .sp-bar-val {
+      writing-mode: vertical-rl;
+      text-orientation: upright;
+      font-size: 0.55rem;
+      letter-spacing: -0.05em;
+    }
+  }
+
+  /* 四位数（单日上千）在窄柱子里会贴边，收一号字 */
+  .sp-bar-val.is-long {
+    font-size: 0.5rem;
   }
 
   .sp-bar-label {
