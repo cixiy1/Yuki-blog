@@ -9,6 +9,8 @@ tags:
   - 微信
 category: 技术
 slug: macos-wechat-db-decrypt
+series: 微信本地数据实践
+seriesOrder: 1
 comment: true
 ---
 

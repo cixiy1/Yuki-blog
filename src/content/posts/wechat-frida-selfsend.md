@@ -10,6 +10,8 @@ tags:
   - protobuf
 category: 技术
 slug: wechat-frida-selfsend
+series: 微信本地数据实践
+seriesOrder: 3
 comment: true
 ---
 
