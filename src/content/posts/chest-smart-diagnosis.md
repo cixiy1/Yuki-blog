@@ -9,6 +9,8 @@ tags:
   - 工程实践
 category: 项目
 slug: chest-smart-diagnosis
+series: 编码经验
+seriesOrder: 3
 comment: true
 ---
 

@@ -10,6 +10,8 @@ tags:
   - macOS
 category: 技术
 slug: dafeiyu-qq-bot-setup
+series: 编码经验
+seriesOrder: 4
 comment: true
 ---
 
