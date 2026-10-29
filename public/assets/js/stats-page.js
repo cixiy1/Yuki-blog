@@ -158,17 +158,6 @@
 			}
 
 			html.push('<div class="sp-chart" style="--sp-n:' + days + '">');
-			// 周背景块先入 DOM：与柱子同列叠放时，DOM 在后的柱子才在上面
-			for (var k = 0; k < weeks.length; k++) {
-				if (k % 2) continue; // 隔周着色，否则相邻两周的色块会连成一片
-				html.push(
-					'<div class="sp-week-bg" style="grid-column:' +
-						(weeks[k].start + 1) +
-						" / span " +
-						(weeks[k].end - weeks[k].start + 1) +
-						'"></div>'
-				);
-			}
 			for (var j = 0; j < days; j++) {
 				var val = typeof values[j] === "number" ? values[j] : 0;
 				var pct = Math.max(2, Math.round((val / max) * 100));
@@ -208,6 +197,21 @@
 
 			// 底部轴：与柱区共用同一套列定义，第一行每柱周几，第二行每周区间
 			html.push('<div class="sp-axis" style="--sp-n:' + days + '">');
+			// 周框先入 DOM：跨两行铺底，后面同格的文字才显示在框上。
+			// 含今天的那个框单独标出来，一眼能看到「本周」在哪
+			for (var q = 0; q < weeks.length; q++) {
+				var holdsToday =
+					dates[weeks[q].start] <= todayKey && todayKey <= dates[weeks[q].end];
+				html.push(
+					'<div class="sp-week-frame' +
+						(holdsToday ? " is-current" : "") +
+						'" style="grid-column:' +
+						(weeks[q].start + 1) +
+						" / span " +
+						(weeks[q].end - weeks[q].start + 1) +
+						'"></div>'
+				);
+			}
 			for (var m = 0; m < days; m++) {
 				var dIdx = dowOf(dates[m]);
 				var isT = dates[m] === todayKey;
