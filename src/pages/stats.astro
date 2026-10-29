@@ -471,6 +471,11 @@ const posts = enabled ? await getStatsPostList() : [];
       font-size: 0.5rem;
     }
 
+    /* 窄屏行高更小，块的延伸量跟着收，否则会吃到日期行的位置 */
+    .sp-week-bg {
+      margin-bottom: -1.3rem;
+    }
+
     /* 一周只剩 60 多像素，起止区间放不下，只留起日 */
     .sp-axis-range {
       display: none;
