@@ -209,10 +209,12 @@ WebUI 的「服务提供商」页加一个 OpenAI 兼容源，填 DeepSeek 的 b
 
 社区插件解决不了、或者跟现成人格打架的活，得自己写。全部 fail-open：读不到库、抛异常、超时都放行。一个插件崩掉整个群没反应，代价太大。
 
+下表省略了 `astrbot_plugin_` 前缀，`dafeiyu_core` 的完整目录名是 `astrbot_plugin_dafeiyu_core`；`dsh-masterkey` 是完整目录名。
+
 | 插件 | 干什么 |
 |---|---|
 | `dafeiyu_core` | 核心补位：被问身份按事实答、出口拦 traceId、被踩线真不回、知道自己在哪个群几点、心跳判断要不要主动开口 |
-| `dafeiyu_masterkey` | 破甲层，第 6 节专门讲 |
+| `dsh-masterkey` | 破甲层，第 6 节专门讲 |
 | `dafeiyu_notes` | 三个记事本工具（记一条、翻旧账、划掉），写进和自动记忆同一张表 |
 | `dafeiyu_crossmem` | 跨会话记忆：私聊当总账本，群里只带全局条目，别人的档案换会话不给看 |
 | `dafeiyu_crosslog` | 翻别的会话的聊天记录，只对主人开放 |
