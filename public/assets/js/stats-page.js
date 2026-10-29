@@ -197,19 +197,12 @@
 
 			// 底部轴：与柱区共用同一套列定义，第一行每柱周几，第二行每周区间
 			html.push('<div class="sp-axis" style="--sp-n:' + days + '">');
-			// 周框先入 DOM：跨两行铺底，后面同格的文字才显示在框上。
-			// 含今天的那个框单独标出来，一眼能看到「本周」在哪
-			for (var q = 0; q < weeks.length; q++) {
-				var holdsToday =
-					dates[weeks[q].start] <= todayKey && todayKey <= dates[weeks[q].end];
+			// 周分隔线先入 DOM：每周起始处一根细线，跨两行划分周界
+			for (var q = 1; q < weeks.length; q++) {
 				html.push(
-					'<div class="sp-week-frame' +
-						(holdsToday ? " is-current" : "") +
-						'" style="grid-column:' +
+					'<span class="sp-week-sep" style="grid-column:' +
 						(weeks[q].start + 1) +
-						" / span " +
-						(weeks[q].end - weeks[q].start + 1) +
-						'"></div>'
+						'"></span>'
 				);
 			}
 			for (var m = 0; m < days; m++) {
@@ -229,8 +222,12 @@
 			for (var n = 0; n < weeks.length; n++) {
 				var ws = weeks[n].start;
 				var we = weeks[n].end;
+				var isCurWeek =
+					dates[ws] <= todayKey && todayKey <= dates[we];
 				html.push(
-					'<span class="sp-axis-week" style="grid-column:' +
+					'<span class="sp-axis-week' +
+						(isCurWeek ? " is-current" : "") +
+						'" style="grid-column:' +
 						(ws + 1) +
 						" / span " +
 						(we - ws + 1) +

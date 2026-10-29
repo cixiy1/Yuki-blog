@@ -397,38 +397,28 @@ const posts = enabled ? await getStatsPostList() : [];
   .sp-axis {
     grid-template-rows: auto auto;
     margin-top: 1rem;
-    row-gap: 0.25rem;
+    row-gap: 0.32rem;
     font-size: 0.6rem;
     line-height: 1.25;
     color: var(--content-meta);
   }
 
-  /* 周框：只把本周的周几与日期框起来，跨两行铺底。
-     负 margin 撑出内边距（文字不贴框沿），左右 3px 让相邻框真正断开。 */
-  .sp-week-frame {
+  /* 周分隔：每周起始处一根细线，跨两行把「周几 + 日期」划成一组。
+     不套框，日期字长一点也只是居中溢出，不会顶到边框上。 */
+  .sp-week-sep {
     grid-row: 1 / span 2;
-    align-self: stretch;
-    margin: -0.45rem 3px;
-    border-radius: 9px;
-    background: var(--btn-regular-bg);
+    justify-self: start;
+    width: 1px;
+    margin: -0.22rem 0 -0.2rem -2px;
+    border-radius: 1px;
+    background: var(--line-divider);
   }
 
-  /* 描边取主题色淡化，比纯灰线更贴柱子；不支持 color-mix 时退回灰线 */
+  /* 线用主题色淡化，比纯灰线更贴柱子，也不至于抢过柱子本身 */
   @supports (color: color-mix(in oklab, red 50%, transparent)) {
-    .sp-week-frame {
-      box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--primary) 26%, transparent);
+    .sp-week-sep {
+      background: color-mix(in oklab, var(--primary) 34%, transparent);
     }
-  }
-
-  @supports not (color: color-mix(in oklab, red 50%, transparent)) {
-    .sp-week-frame {
-      box-shadow: inset 0 0 0 1px var(--line-divider);
-    }
-  }
-
-  /* 含今天的那个框：描一圈主题色，代替给柱子换色的做法 */
-  .sp-week-frame.is-current {
-    box-shadow: inset 0 0 0 1px var(--primary);
   }
 
   .sp-axis-dow {
@@ -448,16 +438,31 @@ const posts = enabled ? await getStatsPostList() : [];
     opacity: 1;
   }
 
-  /* 日期行比周几行低一档，别抢柱子和周几的视觉重心 */
+  /* 日期行比周几行低一档，别抢柱子和周几的视觉重心。
+     居中于整周，没有框参照，稍微溢出一两个像素也看不出。 */
   .sp-axis-week {
     grid-row: 2;
-    font-size: 0.56rem;
+    justify-self: center;
+    font-size: 0.6rem;
+    font-weight: 500;
     white-space: nowrap;
     font-variant-numeric: tabular-nums;
+    letter-spacing: 0.01em;
+  }
+
+  /* 本周的日期用主题色标出来，代替原来给整周描框 */
+  .sp-axis-week.is-current {
+    color: var(--primary);
+    font-weight: 600;
   }
 
   .sp-axis-range {
-    opacity: 0.65;
+    opacity: 0.75;
+    font-weight: inherit;
+  }
+
+  .sp-axis-week.is-current .sp-axis-range {
+    opacity: 0.9;
   }
 
   .sp-chart-foot {
@@ -496,15 +501,18 @@ const posts = enabled ? await getStatsPostList() : [];
       display: none;
     }
 
-    /* 窄屏一列只有 9px：框只留 1px 缝（好和相邻周分开），
-       周几单字收到 0.46rem，字才不会顶出框沿 */
-    .sp-week-frame {
-      margin: -0.45rem 1px;
-      border-radius: 7px;
+    /* 窄屏列缝只有 2px，分隔线贴到列沿 */
+    .sp-week-sep {
+      margin: -0.18rem 0 -0.16rem -1px;
+    }
+
+    .sp-axis-week {
+      font-size: 0.52rem;
+      letter-spacing: 0;
     }
 
     .sp-axis-dow {
-      font-size: 0.44rem;
+      font-size: 0.46rem;
     }
   }
 
